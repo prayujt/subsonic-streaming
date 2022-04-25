@@ -18,7 +18,7 @@ def clean(value):
     value = value.replace('\'','').replace('\"','').replace('’','').replace('$','S')
     return value
 
-def get_video(track, album, artist, release_date, track_num, cover_photo):
+def get_video(track, album, artist, release_date, track_num):
     track = track.replace('$','S')
     new_track = clean(track)
     new_album = clean(album)
@@ -67,8 +67,10 @@ def download_track(id_):
         'Authorization': 'Bearer {token}'.format(token=access_token),
     })
     response = json.loads(r.text)
-    # get album to get artist[0] name
-    return response
+    album_name = response['album']['name']
+    release_date = response['album']['release_date']
+    artist_name = response['album']['artists'][0]['name']
+    get_video(response['name'], album_name, artist_name, release_date, response['track_number'])
 
 def download_album(id_):
     r = requests.get('https://api.spotify.com/v1/albums/{0}'.format(id_), headers={
@@ -80,11 +82,10 @@ def download_album(id_):
     album_name = response['name']
     release_date = response['release_date']
     artist_name = response['artists'][0]['name']
-    cover_art = response['images'][0]['url']
+    #cover_art = response['images'][0]['url']
 
     for track in response['tracks']['items']:
-        track_num = track['track_number']
-        get_video(track['name'], album_name, artist_name, release_date, track_num, cover_art)
+        get_video(track['name'], album_name, artist_name, release_date, track['track_number'])
 
 def download_artist(id_):
     albums = ''
@@ -109,10 +110,10 @@ def download_artist(id_):
         album_name = album['name']
         release_date = album['release_date']
         artist_name = album['artists'][0]['name']
-        cover_art = album['images'][0]['url']
+        #cover_art = album['images'][0]['url']
         for track in album['tracks']['items']:
             track_num = track['track_number']
-            get_video(track['name'], album_name, artist_name, release_date, track_num, cover_art)
+            get_video(track['name'], album_name, artist_name, release_date, track_num)
 
 config = dotenv_values()
 music = []
@@ -136,24 +137,19 @@ for i in range(0, len(items)):
     array = items[i].split('\n')
     music.append(array[int(choices[i+1].strip()) - 1])
 
-
 for value in music:
     split_value = value.split()
     id_ = split_value[0]
     music_type = split_value[1]
 
     if music_type == 'track':
-        pass
-        #download_track(id_)
-
+        download_track(id_)
     elif music_type == 'album':
-        #pass
-        download_album(id_)
-
+        pass
+        #download_album(id_)
     elif music_type == 'artist':
         pass
         #download_artist(id_)
-
     else:
         sys.exit()
 
