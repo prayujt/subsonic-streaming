@@ -145,11 +145,9 @@ for value in music:
     if music_type == 'track':
         download_track(id_)
     elif music_type == 'album':
-        pass
-        #download_album(id_)
+        download_album(id_)
     elif music_type == 'artist':
-        pass
-        #download_artist(id_)
+        download_artist(id_)
     else:
         sys.exit()
 
