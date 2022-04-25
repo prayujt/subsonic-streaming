@@ -10,8 +10,30 @@ import time
 import requests
 import json
 
-def get_video(query):
-    pass
+def clean(value):
+    value = value.replace('\'','').replace('\"','').replace('’','')
+    return value
+
+def get_video(track, album, artist):
+    track = clean(track)
+    album = clean(album)
+    artist = clean(artist)
+    print(track, album, artist)
+    query = track + ' ' + artist + ' lyrics'
+    query = clean(query).replace(' ', '+')
+    print(query)
+    html = urllib.request.urlopen("https://www.youtube.com/results?search_query=" + query)
+    video_ids = re.findall(r"watch\?v=(\S{11})", html.read().decode())
+    video_id = video_ids[0]
+    artistExists = os.path.isdir('/home/files/Music/{0}'.format(artist))
+    albumExists = os.path.isdir('/home/files/Music/{0}/{1}'.format(artist, album))
+    if not artistExists:
+        os.system('mkdir \"/home/files/Music/{0}\"; mkdir \"/home/files/Music/{0}/{1}\"'.format(artist, album))
+    else:
+        if not albumExists:
+            os.system('mkdir \"/home/files/Music/{0}/{1}\"'.format(artist, album))
+
+    #os.system('node /home/files/.scripts/music/youtube_mp3.js {0} \"{1}.mp3\"'.format(video_id,track))ko
 
 def download_track(id_):
     r = requests.get('https://api.spotify.com/v1/tracks/{0}'.format(id_), headers={
@@ -19,7 +41,7 @@ def download_track(id_):
         'Authorization': 'Bearer {token}'.format(token=access_token),
     })
     response = json.loads(r.text)
-    print(os.path.isdir('/home/files/Music'))
+    # get album to get artist[0] name
     return response
 
 def download_album(id_):
@@ -54,10 +76,10 @@ def download_artist(id_):
     response = json.loads(r.text)
 
     for album in response['albums']:
+        album_name = album['name']
         artist = album['artists'][0]['name']
-        print(artist)
-
-    #return response
+        for track in album['tracks']['items']:
+            get_video(track['name'], album['name'], artist)
 
 music = []
 
@@ -87,24 +109,21 @@ for value in music:
 
     if music_type == 'track':
         pass
-        #print(download_track(id_))
+        #download_track(id_)
 
     elif music_type == 'album':
         pass
-        #print(download_album(id_))
+        #download_album(id_)
 
     elif music_type == 'artist':
         #pass
-        print(download_artist(id_))
+        download_artist(id_)
 
     else:
         sys.exit()
 
 """
-yt = YouTube("https://www.youtube.com/watch?v=" + song_id)
-videoTitle = yt.title
 
-os.system('node /home/files/.scripts/music/youtube_mp3.js {id} \"{title}.mp3\"'.format(id=song_id,title=title))
 
 audiofile = eyed3.load("/home/files/Music/" + title + ".mp3")
 
