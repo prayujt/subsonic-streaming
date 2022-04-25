@@ -9,16 +9,21 @@ import ampache
 import time
 import requests
 import json
+from dotenv import dotenv_values
+
+catalog_id = 3
+client = ampache.API()
 
 def clean(value):
     value = value.replace('\'','').replace('\"','').replace('’','').replace('$','S')
     return value
 
 def get_video(track, album, artist, release_date, track_num, cover_photo):
+    track = track.replace('$','S')
     new_track = clean(track)
     new_album = clean(album)
     new_artist = clean(artist)
-    query = new_track + ' ' + new_artist + ' lyrics'
+    query = new_track + ' ' + new_artist + ' audio'
     query = clean(query).replace(' ', '+')
     print(query)
     html = urllib.request.urlopen("https://www.youtube.com/results?search_query=" + query)
@@ -26,6 +31,10 @@ def get_video(track, album, artist, release_date, track_num, cover_photo):
     video_id = video_ids[0]
     artistExists = os.path.isdir('/home/files/Music/{0}'.format(new_artist))
     albumExists = os.path.isdir('/home/files/Music/{0}/{1}'.format(new_artist, new_album))
+    trackExists = os.path.isfile('/home/files/Music/{0}/{1}/{2}.mp3'.format(new_artist, new_album, track))
+    if trackExists:
+        print('skipped repeat...')
+        return
     if not artistExists:
         os.system('mkdir \"/home/files/Music/{0}\"; mkdir \"/home/files/Music/{0}/{1}\"'.format(new_artist, new_album))
     else:
@@ -41,10 +50,16 @@ def get_video(track, album, artist, release_date, track_num, cover_photo):
     audiofile.tag.artist = artist
     audiofile.tag.release_date = release_date
     audiofile.tag.recording_date = release_date
-    audiofile.tag.track = track_num
+    audiofile.tag.track_num = track_num
     # audiofile.tag.images.set(img_url=cover_photo)
 
     audiofile.tag.save()
+
+    passphrase = client.encrypt_string(config['API_KEY'], 'prayuj')
+    auth = client.handshake('http://prayujt.com:1025', passphrase)
+    #client.catalog_action('clean_catalog', catalog_id)
+    client.catalog_action('add_to_catalog', catalog_id)
+    client.catalog_action('verify_catalog', catalog_id)
 
 def download_track(id_):
     r = requests.get('https://api.spotify.com/v1/tracks/{0}'.format(id_), headers={
@@ -61,11 +76,15 @@ def download_album(id_):
         'Authorization': 'Bearer {token}'.format(token=access_token),
     })
     response = json.loads(r.text)
-    return response
+
+    album_name = response['name']
+    release_date = response['release_date']
+    artist_name = response['artists'][0]['name']
+    cover_art = response['images'][0]['url']
 
     for track in response['tracks']['items']:
-        id2 = track['id']
-    #return response
+        track_num = track['track_number']
+        get_video(track['name'], album_name, artist_name, release_date, track_num, cover_art)
 
 def download_artist(id_):
     albums = ''
@@ -89,12 +108,13 @@ def download_artist(id_):
     for album in response['albums']:
         album_name = album['name']
         release_date = album['release_date']
-        artist = album['artists'][0]['name']
+        artist_name = album['artists'][0]['name']
         cover_art = album['images'][0]['url']
         for track in album['tracks']['items']:
             track_num = track['track_number']
-            get_video(track['name'], album['name'], artist, release_date, track_num, cover_art)
+            get_video(track['name'], album_name, artist_name, release_date, track_num, cover_art)
 
+config = dotenv_values()
 music = []
 
 id_file = open('/home/files/.scripts/music/choices.txt')
@@ -116,6 +136,7 @@ for i in range(0, len(items)):
     array = items[i].split('\n')
     music.append(array[int(choices[i+1].strip()) - 1])
 
+
 for value in music:
     split_value = value.split()
     id_ = split_value[0]
@@ -126,46 +147,15 @@ for value in music:
         #download_track(id_)
 
     elif music_type == 'album':
-        pass
-        #download_album(id_)
+        #pass
+        download_album(id_)
 
     elif music_type == 'artist':
-        #pass
-        download_artist(id_)
+        pass
+        #download_artist(id_)
 
     else:
         sys.exit()
 
-"""
-
-
-
-try:
-    album = response['tracks']['items'][0]['album']['name']
-    audiofile.tag.album = album
-except KeyError:
-    pass
-if artist == '':
-    try:
-        artist = response['tracks']['items'][0]['artists'][0]['name']
-    except KeyError:
-        pass
-audiofile.tag.artist = artist
-audiofile.tag.title = title
-audiofile.tag.recording_date = year
-
-audiofile.tag.save()
-
-command = 'get_cover_art --path ' + '\"/home/files/Music/' + title + '.mp3\"'
-os.system(command)
-
-os.system('rm -r temp.txt temp2.txt choices.txt _cover_art')
-"""
-
-"""
-track = song['name']
-album = song['album']['name']
-artist = song['album']['artists'][0]['name']
-release_date = song['album']['release_date']
-image_url = song['album']['images'][0]['url']
-"""
+time.sleep(1)
+client.catalog_action('verify_catalog', catalog_id)
