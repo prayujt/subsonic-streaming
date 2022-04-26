@@ -18,7 +18,7 @@ def clean(value):
 
 def get_video(track, album, artist, release_date, track_num):
     original_track = track
-    track = track.replace('$','S').replace('?','').replace('!','').replace('/','')
+    track = track.replace('$','S').replace('?','').replace('!','').replace('/','').replace('\'','').replace('\"','')
     new_track = clean(track)
     new_album = clean(album)
     new_artist = clean(artist)
