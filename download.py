@@ -13,7 +13,7 @@ catalog_id = 3
 client = ampache.API()
 
 def clean(value):
-    value = value.replace('\'','').replace('\"','').replace('’','').replace('$','S').replace('/','')
+    value = value.replace('\'','').replace('\"','').replace('’','').replace('$','S').replace('/','').replace('#','')
     return value
 
 def get_video(track, album, artist, release_date, track_num):
@@ -23,11 +23,12 @@ def get_video(track, album, artist, release_date, track_num):
     new_album = clean(album)
     new_artist = clean(artist)
     query = new_track + ' ' + new_artist + ' audio'
-    query = clean(query).replace(' ', '+')
+    query = clean(query).replace('   ', '+').replace('  ', '+').replace(' ', '+')
     print(query)
     try:
         html = urllib.request.urlopen("https://www.youtube.com/results?search_query=" + query)
     except UnicodeEncodeError as e:
+        print('invalid name... skipping')
         return
     video_ids = re.findall(r"watch\?v=(\S{11})", html.read().decode())
     video_id = video_ids[0]
@@ -46,7 +47,11 @@ def get_video(track, album, artist, release_date, track_num):
     os.system('node /home/files/.scripts/music/youtube_mp3.js {0} \"{1}.mp3\" \"{2}\"'.format(video_id,track,location))
 
     file_location = location + '/' + track + '.mp3'
-    audiofile = eyed3.load(file_location)
+    print(file_location)
+    try:
+        audiofile = eyed3.load(file_location)
+    except Exception as e:
+        return
     audiofile.tag.title = original_track
     audiofile.tag.album = album
     audiofile.tag.artist = artist
