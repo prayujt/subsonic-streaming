@@ -19,7 +19,8 @@ def clean(value):
     return value
 
 def get_video(track, album, artist, release_date, track_num):
-    track = track.replace('$','S')
+    original_track = track
+    track = track.replace('$','S').replace('?','').replace('!','')
     new_track = clean(track)
     new_album = clean(album)
     new_artist = clean(artist)
@@ -45,7 +46,7 @@ def get_video(track, album, artist, release_date, track_num):
 
     file_location = location + '/' + track + '.mp3'
     audiofile = eyed3.load(file_location)
-    audiofile.tag.title = track
+    audiofile.tag.title = original_track
     audiofile.tag.album = album
     audiofile.tag.artist = artist
     audiofile.tag.release_date = release_date
@@ -60,6 +61,7 @@ def get_video(track, album, artist, release_date, track_num):
     #client.catalog_action('clean_catalog', catalog_id)
     client.catalog_action('add_to_catalog', catalog_id)
     client.catalog_action('verify_catalog', catalog_id)
+    client.catalog_action('clean_catalog', catalog_id)
 
 def download_track(id_):
     r = requests.get('https://api.spotify.com/v1/tracks/{0}'.format(id_), headers={

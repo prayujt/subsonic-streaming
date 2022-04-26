@@ -69,7 +69,7 @@ for i in range(0, len(lines)):
         if artist_count == 0 and j == album_count - 1 and i == len(lines) - 1:
             add = ''
         album = albumList[j]
-        value += 'Album: ' + album['name'] + add
+        value += 'Album: ' + album['name'] + ' [' + album['artists'][0]['name'] + ']' + add
         choices_file.write(album['id'] + ' album' + add)
     for j in range(0, artist_count):
         add = '\n'
