@@ -6,13 +6,13 @@ Includes crontab script to be run every minute to update Ampache database.
 https://www.icloud.com/shortcuts/e503330f5aa8441f9388c2307c1fc3ef
 
 ## Dependencies
-1. Python
+### Python
 * urllib
 * ampache
 * dotenv
 * eyed3
 
-2. NodeJS
+### NodeJS
 * youtube-mp3-downloader
 
 ## TODO
