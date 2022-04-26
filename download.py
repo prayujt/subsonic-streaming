@@ -2,8 +2,6 @@ import urllib.request
 import re
 import sys
 import os
-from pytube import YouTube
-from youtube_title_parse import get_artist_title
 import eyed3
 import ampache
 import time
@@ -15,19 +13,22 @@ catalog_id = 3
 client = ampache.API()
 
 def clean(value):
-    value = value.replace('\'','').replace('\"','').replace('’','').replace('$','S')
+    value = value.replace('\'','').replace('\"','').replace('’','').replace('$','S').replace('/','')
     return value
 
 def get_video(track, album, artist, release_date, track_num):
     original_track = track
-    track = track.replace('$','S').replace('?','').replace('!','')
+    track = track.replace('$','S').replace('?','').replace('!','').replace('/','')
     new_track = clean(track)
     new_album = clean(album)
     new_artist = clean(artist)
     query = new_track + ' ' + new_artist + ' audio'
     query = clean(query).replace(' ', '+')
     print(query)
-    html = urllib.request.urlopen("https://www.youtube.com/results?search_query=" + query)
+    try:
+        html = urllib.request.urlopen("https://www.youtube.com/results?search_query=" + query)
+    except UnicodeEncodeError as e:
+        return
     video_ids = re.findall(r"watch\?v=(\S{11})", html.read().decode())
     video_id = video_ids[0]
     artistExists = os.path.isdir('/home/files/Music/{0}'.format(new_artist))

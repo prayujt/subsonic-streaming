@@ -26,7 +26,7 @@ value = ''
 for i in range(0, len(lines)):
     line = lines[i]
     song_count = 5
-    album_count = 3
+    album_count = 5
     artist_count = 2
     search_keyword = ''
     for word in line.split():
