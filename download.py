@@ -102,10 +102,11 @@ def download_artist(id_):
         'Authorization': 'Bearer {token}'.format(token=access_token),
     })
     response = json.loads(r.text)
+    length = len(response['items'])
 
-    for i in range(len(response['items'])):
+    for i in range(length):
         add = ','
-        if i == len(response['items'])-1:
+        if i == length - 1:
             add = ''
         albums += response['items'][i]['id'] + add
     r = requests.get('https://api.spotify.com/v1/albums?ids={0}'.format(albums), headers={
