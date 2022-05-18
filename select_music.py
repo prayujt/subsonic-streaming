@@ -61,7 +61,6 @@ for i in range(0, len(lines)):
         album = song['album']['name']
         artist = song['album']['artists'][0]['name']
         release_date = song['album']['release_date']
-        image_url = song['album']['images'][0]['url']
         value += artist + ' - ' + track + ' [' + album + ']' + add
         choices_file.write(song['id'] + ' track' + add)
     for j in range(0, album_count):
