@@ -2,6 +2,8 @@
 import download
 from dotenv import dotenv_values
 import sys
+import requests
+import json
 
 if len(sys.argv) < 3:
     print("not enough arguments\n")

@@ -150,19 +150,29 @@ class Download:
         time.sleep(1)
         self.client.catalog_action('verify_catalog', self.catalog_id)
 
-    def download_track_manual(self, _id, url):
-        filePath = '/home/files/Music/{0}/{1}/{2}.mp3'.format(new_artist, new_album, new_track)
-        trackExists = os.path.isfile(filePath)
-        if trackExists:
-            os.system('rm {0}'.format(filePath))
+    def download_track_manual(self, id_, url):
         r = requests.get('https://api.spotify.com/v1/tracks/{0}'.format(id_), headers={
             'Content-Type': 'application/json',
             'Authorization': 'Bearer {token}'.format(token=self.access_token),
         })
         response = json.loads(r.text)
-        album_name = response['album']['name']
+        album_name = ''
+        try:
+            album_name = response['album']['name']
+        except KeyError:
+            print('Invalid spotify url')
+            sys.exit()
         release_date = response['album']['release_date']
         artist_name = response['album']['artists'][0]['name']
+        new_track = self.clean(track)
+        new_album = self.clean(album)
+        new_artist = self.clean(artist)
+
+        filePath = '/home/files/Music/{0}/{1}/{2}.mp3'.format(new_artist, new_album, new_track)
+        trackExists = os.path.isfile(filePath)
+        if trackExists:
+            os.system('rm {0}'.format(filePath))
+
         self.get_video(response['name'], album_name, artist_name, release_date, response['track_number'], url)
         time.sleep(1)
         self.client.catalog_action('verify_catalog', self.catalog_id)
