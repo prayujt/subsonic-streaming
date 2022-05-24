@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import urllib.request
 import eyed3
 import requests
@@ -28,11 +29,13 @@ for i in range(0, len(lines)):
     song_count = 5
     album_count = 5
     artist_count = 2
-    search_keyword = ''
-    for word in line.split():
-        search_keyword += word + ' '
+    hindi = false
 
-    query = search_keyword.strip().replace(' ', '%20')
+    if line.startswith('hindi') or line.endswith('hindi'):
+        hindi = true
+        line = line.replace('hindi', '')
+
+    query = line.strip().replace(' ', '%20')
 
     r = requests.get('https://api.spotify.com/v1/search?q={search}&type=track,album,artist'.format(search=query), headers={
         'Content-Type': 'application/json',
@@ -51,11 +54,12 @@ for i in range(0, len(lines)):
         song_count += artist_count - len(artistList)
         artist_count = len(artistList)
 
-
     for j in range(0, song_count):
         add = '\n'
         if album_count == 0 and artist_count == 0 and j == song_count - 1 and i == len(lines) - 1:
             add = ''
+        if hindi:
+            add = ' hindi' + add
         song = songList[j]
         track = song['name']
         album = song['album']['name']
@@ -67,6 +71,8 @@ for i in range(0, len(lines)):
         add = '\n'
         if artist_count == 0 and j == album_count - 1 and i == len(lines) - 1:
             add = ''
+        if hindi:
+            add = ' hindi' + add
         album = albumList[j]
         value += 'Album: ' + album['name'] + ' [' + album['artists'][0]['name'] + ']' + add
         choices_file.write(album['id'] + ' album' + add)
@@ -74,6 +80,8 @@ for i in range(0, len(lines)):
         add = '\n'
         if j == artist_count - 1 and i == len(lines) - 1:
             add = ''
+        if hindi:
+            add = ' hindi' + add
         artist = artistList[j]
         value += 'Artist: ' + artist['name'] + add
         choices_file.write(artist['id'] + ' artist' + add)
