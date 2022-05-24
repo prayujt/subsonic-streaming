@@ -77,7 +77,7 @@ class Download:
         album_name = response['album']['name']
         release_date = response['album']['release_date']
         artist_name = response['album']['artists'][0]['name']
-        get_video(response['name'], album_name, artist_name, release_date, response['track_number'])
+        self.get_video(response['name'], album_name, artist_name, release_date, response['track_number'])
         time.sleep(1)
         self.client.catalog_action('verify_catalog', catalog_id)
 
@@ -94,7 +94,7 @@ class Download:
         #cover_art = response['images'][0]['url']
 
         for track in response['tracks']['items']:
-            get_video(track['name'], album_name, artist_name, release_date, track['track_number'])
+            self.get_video(track['name'], album_name, artist_name, release_date, track['track_number'])
         time.sleep(1)
         self.client.catalog_action('verify_catalog', catalog_id)
 
@@ -125,7 +125,7 @@ class Download:
             #cover_art = album['images'][0]['url']
             for track in album['tracks']['items']:
                 track_num = track['track_number']
-                get_video(track['name'], album_name, artist_name, release_date, track_num)
+                self.get_video(track['name'], album_name, artist_name, release_date, track_num)
         time.sleep(1)
         self.client.catalog_action('verify_catalog', catalog_id)
 
