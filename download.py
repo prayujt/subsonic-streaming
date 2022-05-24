@@ -22,10 +22,10 @@ class Download:
         return value
 
     def get_video(self, track, album, artist, release_date, track_num):
-        new_track = clean(track)
-        new_album = clean(album)
-        new_artist = clean(artist)
-        query = clean(new_track + ' ' + new_artist + ' audio').replace('  ', '+').replace(' ' , '+')
+        new_track = self.clean(track)
+        new_album = self.clean(album)
+        new_artist = self.clean(artist)
+        query = self.clean(new_track + ' ' + new_artist + ' audio').replace('  ', '+').replace(' ' , '+')
         print(query)
         try:
             html = urllib.request.urlopen("https://www.youtube.com/results?search_query=" + query)
