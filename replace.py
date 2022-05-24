@@ -6,7 +6,7 @@ import requests
 import json
 
 if len(sys.argv) < 3:
-    print("not enough arguments\n")
+    print("not enough arguments")
     sys.exit()
 
 config = dotenv_values()

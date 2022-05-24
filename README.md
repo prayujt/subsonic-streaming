@@ -17,3 +17,4 @@ https://www.icloud.com/shortcuts/e503330f5aa8441f9388c2307c1fc3ef
 
 ## TODO
 * Add support for ID3 tag additions for albums/songs with unsupported ASCII characters + emojis
+* Add support for migrating Spotify playlists into Ampache playlists
