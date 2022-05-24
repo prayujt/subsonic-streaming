@@ -29,10 +29,10 @@ for i in range(0, len(lines)):
     song_count = 5
     album_count = 5
     artist_count = 2
-    hindi = false
+    hindi = False
 
     if line.startswith('hindi') or line.endswith('hindi'):
-        hindi = true
+        hindi = True
         line = line.replace('hindi', '')
 
     query = line.strip().replace(' ', '%20')
