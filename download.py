@@ -10,8 +10,8 @@ import requests
 import json
 
 class Download:
-    catalog_id = 3
     def __init__(self, API_KEY, access_token):
+        self.catalog_id = 3
         self.client = ampache.API()
         self.access_token = access_token
         passphrase = self.client.encrypt_string(API_KEY, 'prayuj')
@@ -64,9 +64,9 @@ class Download:
 
         audiofile.tag.save()
 
-        self.client.catalog_action('add_to_catalog', catalog_id)
-        self.client.catalog_action('verify_catalog', catalog_id)
-        self.client.catalog_action('clean_catalog', catalog_id)
+        self.client.catalog_action('add_to_catalog', self.catalog_id)
+        self.client.catalog_action('verify_catalog', self.catalog_id)
+        self.client.catalog_action('clean_catalog', self.catalog_id)
 
     def download_track(self, id_):
         r = requests.get('https://api.spotify.com/v1/tracks/{0}'.format(id_), headers={
@@ -79,7 +79,7 @@ class Download:
         artist_name = response['album']['artists'][0]['name']
         self.get_video(response['name'], album_name, artist_name, release_date, response['track_number'])
         time.sleep(1)
-        self.client.catalog_action('verify_catalog', catalog_id)
+        self.client.catalog_action('verify_catalog', self.catalog_id)
 
     def download_album(self, id_):
         r = requests.get('https://api.spotify.com/v1/albums/{0}'.format(id_), headers={
@@ -96,7 +96,7 @@ class Download:
         for track in response['tracks']['items']:
             self.get_video(track['name'], album_name, artist_name, release_date, track['track_number'])
         time.sleep(1)
-        self.client.catalog_action('verify_catalog', catalog_id)
+        self.client.catalog_action('verify_catalog', self.catalog_id)
 
     def download_artist(self, id_):
         albums = ''
@@ -127,7 +127,7 @@ class Download:
                 track_num = track['track_number']
                 self.get_video(track['name'], album_name, artist_name, release_date, track_num)
         time.sleep(1)
-        self.client.catalog_action('verify_catalog', catalog_id)
+        self.client.catalog_action('verify_catalog', self.catalog_id)
 
     def download_hindi(self, music_type, id_):
         if music_type == 'track':
@@ -143,4 +143,4 @@ class Download:
             sys.exit()
 
         time.sleep(1)
-        self.client.catalog_action('verify_catalog', catalog_id)
+        self.client.catalog_action('verify_catalog', self.catalog_id)
