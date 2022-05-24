@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import download
+from dotenv import dotenv_values
 
 music = []
 config = dotenv_values()
@@ -27,7 +28,7 @@ for value in music:
     split_value = value.split()
     id_ = split_value[0]
     music_type = split_value[1]
-    client = download.Download(config['API_KEY'])
+    client = download.Download(config['API_KEY'], access_token)
 
     if len(split_value) == 3:
         client.download_hindi(music_type, id_)

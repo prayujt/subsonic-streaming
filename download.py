@@ -8,12 +8,12 @@ import ampache
 import time
 import requests
 import json
-from dotenv import dotenv_values
 
 class Download:
     catalog_id = 3
-    def __init__(self, API_KEY):
+    def __init__(self, API_KEY, access_token):
         self.client = ampache.API()
+        self.access_token = access_token
         passphrase = self.client.encrypt_string(API_KEY, 'prayuj')
         auth = self.client.handshake('http://prayujt.com:1025', passphrase)
 
@@ -71,7 +71,7 @@ class Download:
     def download_track(self, id_):
         r = requests.get('https://api.spotify.com/v1/tracks/{0}'.format(id_), headers={
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer {token}'.format(token=access_token),
+            'Authorization': 'Bearer {token}'.format(token=self.access_token),
         })
         response = json.loads(r.text)
         album_name = response['album']['name']
@@ -84,7 +84,7 @@ class Download:
     def download_album(self, id_):
         r = requests.get('https://api.spotify.com/v1/albums/{0}'.format(id_), headers={
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer {token}'.format(token=access_token),
+            'Authorization': 'Bearer {token}'.format(token=self.access_token),
         })
         response = json.loads(r.text)
 
@@ -102,7 +102,7 @@ class Download:
         albums = ''
         r = requests.get('https://api.spotify.com/v1/artists/{0}/albums'.format(id_), headers={
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer {token}'.format(token=access_token),
+            'Authorization': 'Bearer {token}'.format(token=self.access_token),
         })
         response = json.loads(r.text)
         length = len(response['items'])
@@ -114,7 +114,7 @@ class Download:
             albums += response['items'][i]['id'] + add
         r = requests.get('https://api.spotify.com/v1/albums?ids={0}'.format(albums), headers={
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer {token}'.format(token=access_token),
+            'Authorization': 'Bearer {token}'.format(token=self.access_token),
         })
         response = json.loads(r.text)
 
