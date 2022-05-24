@@ -21,7 +21,7 @@ class Download:
         value = value.replace('\'','').replace('\"','').replace('$','S').replace('/','').replace('#','').replace('?','').replace('!','')
         return value
 
-    def get_video(self, track, album, artist, release_date, track_num):
+    def search(self, track, album, artist):
         new_track = self.clean(track)
         new_album = self.clean(album)
         new_artist = self.clean(artist)
@@ -34,6 +34,11 @@ class Download:
             return
         video_ids = re.findall(r"watch\?v=(\S{11})", html.read().decode())
         video_id = video_ids[0]
+        return video_id
+
+    def get_video(self, track, album, artist, release_date, track_num, video_id):
+        if video_id == '':
+            video_id = self.search(track, album, artist)
         artistExists = os.path.isdir('/home/files/Music/{0}'.format(new_artist))
         albumExists = os.path.isdir('/home/files/Music/{0}/{1}'.format(new_artist, new_album))
         trackExists = os.path.isfile('/home/files/Music/{0}/{1}/{2}.mp3'.format(new_artist, new_album, new_track))
@@ -77,7 +82,7 @@ class Download:
         album_name = response['album']['name']
         release_date = response['album']['release_date']
         artist_name = response['album']['artists'][0]['name']
-        self.get_video(response['name'], album_name, artist_name, release_date, response['track_number'])
+        self.get_video(response['name'], album_name, artist_name, release_date, response['track_number'], '')
         time.sleep(1)
         self.client.catalog_action('verify_catalog', self.catalog_id)
 
@@ -94,7 +99,7 @@ class Download:
         #cover_art = response['images'][0]['url']
 
         for track in response['tracks']['items']:
-            self.get_video(track['name'], album_name, artist_name, release_date, track['track_number'])
+            self.get_video(track['name'], album_name, artist_name, release_date, track['track_number'], '')
         time.sleep(1)
         self.client.catalog_action('verify_catalog', self.catalog_id)
 
@@ -125,7 +130,7 @@ class Download:
             #cover_art = album['images'][0]['url']
             for track in album['tracks']['items']:
                 track_num = track['track_number']
-                self.get_video(track['name'], album_name, artist_name, release_date, track_num)
+                self.get_video(track['name'], album_name, artist_name, release_date, track_num, '')
         time.sleep(1)
         self.client.catalog_action('verify_catalog', self.catalog_id)
 
@@ -142,5 +147,22 @@ class Download:
         else:
             sys.exit()
 
+        time.sleep(1)
+        self.client.catalog_action('verify_catalog', self.catalog_id)
+
+    def download_track_manual(self, _id, url):
+        filePath = '/home/files/Music/{0}/{1}/{2}.mp3'.format(new_artist, new_album, new_track)
+        trackExists = os.path.isfile(filePath)
+        if trackExists:
+            os.system('rm {0}'.format(filePath))
+        r = requests.get('https://api.spotify.com/v1/tracks/{0}'.format(id_), headers={
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer {token}'.format(token=self.access_token),
+        })
+        response = json.loads(r.text)
+        album_name = response['album']['name']
+        release_date = response['album']['release_date']
+        artist_name = response['album']['artists'][0]['name']
+        self.get_video(response['name'], album_name, artist_name, release_date, response['track_number'], url)
         time.sleep(1)
         self.client.catalog_action('verify_catalog', self.catalog_id)

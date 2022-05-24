@@ -31,9 +31,9 @@ for i in range(0, len(lines)):
     artist_count = 2
     hindi = False
 
-    if line.startswith('hindi') or line.endswith('hindi'):
+    if line.startswith('hindi') or line.endswith('hindi') or line.startswith('Hindi') or line.endswith('Hindi'):
         hindi = True
-        line = line.replace('hindi', '')
+        line = line.replace('hindi', '').replace('Hindi', '')
 
     query = line.strip().replace(' ', '%20')
 
@@ -58,32 +58,32 @@ for i in range(0, len(lines)):
         add = '\n'
         if album_count == 0 and artist_count == 0 and j == song_count - 1 and i == len(lines) - 1:
             add = ''
-        if hindi:
-            add = ' hindi' + add
         song = songList[j]
         track = song['name']
         album = song['album']['name']
         artist = song['album']['artists'][0]['name']
         release_date = song['album']['release_date']
         value += artist + ' - ' + track + ' [' + album + ']' + add
+        if hindi:
+            add = ' hindi' + add
         choices_file.write(song['id'] + ' track' + add)
     for j in range(0, album_count):
         add = '\n'
         if artist_count == 0 and j == album_count - 1 and i == len(lines) - 1:
             add = ''
-        if hindi:
-            add = ' hindi' + add
         album = albumList[j]
         value += 'Album: ' + album['name'] + ' [' + album['artists'][0]['name'] + ']' + add
+        if hindi:
+            add = ' hindi' + add
         choices_file.write(album['id'] + ' album' + add)
     for j in range(0, artist_count):
         add = '\n'
         if j == artist_count - 1 and i == len(lines) - 1:
             add = ''
-        if hindi:
-            add = ' hindi' + add
         artist = artistList[j]
         value += 'Artist: ' + artist['name'] + add
+        if hindi:
+            add = ' hindi' + add
         choices_file.write(artist['id'] + ' artist' + add)
     if not i == len(lines) - 1:
         value += '----------\n'
