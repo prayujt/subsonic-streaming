@@ -21,6 +21,6 @@ r = requests.post('https://accounts.spotify.com/api/token', {
 response = json.loads(r.text)
 access_token = response['access_token']
 
-client = download.Download(config['API_KEY'], access_token)
+client = download.Download(config['API_KEY'], access_token, config['AMPACHE_URL'], config['AMPACHE_USERNAME'])
 
 client.download_track_manual(sys.argv[1], sys.argv[2])
