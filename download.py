@@ -39,6 +39,9 @@ class Download:
     def get_video(self, track, album, artist, release_date, track_num, video_id):
         if video_id == '':
             video_id = self.search(track, album, artist)
+        new_artist = self.clean(artist)
+        new_album = self.clean(album)
+        new_track = self.clean(track)
         artistExists = os.path.isdir('/home/files/Music/{0}'.format(new_artist))
         albumExists = os.path.isdir('/home/files/Music/{0}/{1}'.format(new_artist, new_album))
         trackExists = os.path.isfile('/home/files/Music/{0}/{1}/{2}.mp3'.format(new_artist, new_album, new_track))
@@ -150,7 +153,8 @@ class Download:
         time.sleep(1)
         self.client.catalog_action('verify_catalog', self.catalog_id)
 
-    def download_track_manual(self, id_, url):
+    def download_track_manual(self, spotify_url, youtube_url):
+        id_ = spotify_url[spotify_url.find('track/')+6:]
         r = requests.get('https://api.spotify.com/v1/tracks/{0}'.format(id_), headers={
             'Content-Type': 'application/json',
             'Authorization': 'Bearer {token}'.format(token=self.access_token),
@@ -164,15 +168,17 @@ class Download:
             sys.exit()
         release_date = response['album']['release_date']
         artist_name = response['album']['artists'][0]['name']
-        new_track = self.clean(track)
-        new_album = self.clean(album)
-        new_artist = self.clean(artist)
+        track_name = response['name']
+        track_number = response['track_number']
+        new_track = self.clean(track_name)
+        new_album = self.clean(album_name)
+        new_artist = self.clean(artist_name)
 
         filePath = '/home/files/Music/{0}/{1}/{2}.mp3'.format(new_artist, new_album, new_track)
         trackExists = os.path.isfile(filePath)
         if trackExists:
-            os.system('rm {0}'.format(filePath))
+            os.system('rm \"{0}\"'.format(filePath))
 
-        self.get_video(response['name'], album_name, artist_name, release_date, response['track_number'], url)
+        self.get_video(track_name, album_name, artist_name, release_date, track_number, youtube_url[youtube_url.find('v=')+2:])
         time.sleep(1)
         self.client.catalog_action('verify_catalog', self.catalog_id)
