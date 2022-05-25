@@ -10,12 +10,12 @@ import requests
 import json
 
 class Download:
-    def __init__(self, API_KEY, access_token):
+    def __init__(self, API_KEY, access_token, url, username):
         self.catalog_id = 3
         self.client = ampache.API()
         self.access_token = access_token
-        passphrase = self.client.encrypt_string(API_KEY, 'prayuj')
-        auth = self.client.handshake('http://prayujt.com:1025', passphrase)
+        passphrase = self.client.encrypt_string(API_KEY, username)
+        auth = self.client.handshake(url, passphrase)
 
     def clean(self, value):
         value = value.replace('\'','').replace('\"','').replace('$','S').replace('/','').replace('#','').replace('?','').replace('!','')

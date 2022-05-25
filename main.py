@@ -28,7 +28,7 @@ for value in music:
     split_value = value.split()
     id_ = split_value[0]
     music_type = split_value[1]
-    client = download.Download(config['API_KEY'], access_token)
+    client = download.Download(config['API_KEY'], access_token, config['AMPACHE_URL'], config['AMPACHE_USERNAME'])
 
     if len(split_value) == 3:
         client.download_hindi(music_type, id_)
