@@ -73,9 +73,12 @@ class Download:
 
         audiofile.tag.save()
 
-        self.client.catalog_action('add_to_catalog', self.catalog_id)
-        self.client.catalog_action('verify_catalog', self.catalog_id)
-        self.client.catalog_action('clean_catalog', self.catalog_id)
+        try:
+            self.client.catalog_action('add_to_catalog', self.catalog_id)
+            self.client.catalog_action('verify_catalog', self.catalog_id)
+            self.client.catalog_action('clean_catalog', self.catalog_id)
+        except json.decoder.JSONDecodeError:
+            pass
 
     def download_track(self, id_):
         r = requests.get('https://api.spotify.com/v1/tracks/{0}'.format(id_), headers={
@@ -87,8 +90,8 @@ class Download:
         release_date = response['album']['release_date']
         artist_name = response['album']['artists'][0]['name']
         self.get_video(response['name'], album_name, artist_name, release_date, response['track_number'], '')
-        time.sleep(1)
-        self.client.catalog_action('verify_catalog', self.catalog_id)
+        #time.sleep(1)
+        #self.client.catalog_action('verify_catalog', self.catalog_id)
 
     def download_album(self, id_):
         r = requests.get('https://api.spotify.com/v1/albums/{0}'.format(id_), headers={
@@ -195,11 +198,11 @@ class Download:
         playlist = text['tracks']['items']
         for song in playlist:
             album = song['track']['album']['name']
-            href = song['track']['href']
-            songs = self.client.songs(filter_str="Amsterdam", exact=1)
+            songs = self.client.songs(filter_str=song['track']['name'], exact=1)
+            if songs['song'] == []:
+                href = song['track']['href']
+                self.download_track(href[href.find('tracks/')+7:])
+                songs = self.client.songs(filter_str=song['track']['name'], exact=1)
             for temp in songs['song']:
                 if temp['album']['name'] == album:
-                    self.download_track(href[href.find('tracks/')+7:])
-                    self.client.catalog_action('verify_catalog', self.catalog_id)
-                    sleep(0.5)
-                    self.client.playlist_add_song(playlist_id, temp['album']['id'], 1)
+                    self.client.playlist_add_song(playlist_id, temp['id'], 1)
