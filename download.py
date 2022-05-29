@@ -26,7 +26,7 @@ class Download:
         new_track = self.clean(track)
         new_album = self.clean(album)
         new_artist = self.clean(artist)
-        query = self.clean(new_track + ' ' + new_artist + ' audio').replace('  ', '+').replace(' ' , '+')
+        query = self.clean(new_track + ' ' + new_artist + ' audio').replace('  ', '+').replace(' ' , '+').replace('&', '%26')
         print(query)
         try:
             html = urllib.request.urlopen("https://www.youtube.com/results?search_query=" + query)
