@@ -13,6 +13,7 @@ class Download:
     def __init__(self, API_KEY, access_token, url, username):
         self.catalog_id = 3
         self.client = ampache.API()
+        self.client.set_format('json')
         self.access_token = access_token
         passphrase = self.client.encrypt_string(API_KEY, username)
         auth = self.client.handshake(url, passphrase)
@@ -182,3 +183,23 @@ class Download:
         self.get_video(track_name, album_name, artist_name, release_date, track_number, youtube_url[youtube_url.find('v=')+2:])
         time.sleep(1)
         self.client.catalog_action('verify_catalog', self.catalog_id)
+
+    def download_playlist(self, spotify_url, playlist_name):
+        playlist_id = self.client.playlist_create(playlist_name, 'private')['id']
+        id_ = spotify_url[spotify_url.find('playlist/')+9:]
+        r = requests.get('https://api.spotify.com/v1/playlists/{0}'.format(id_), headers={
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer {token}'.format(token=self.access_token),
+        })
+        text = json.loads(r.text)
+        playlist = text['tracks']['items']
+        for song in playlist:
+            album = song['track']['album']['name']
+            href = song['track']['href']
+            songs = self.client.songs(filter_str="Amsterdam", exact=1)
+            for temp in songs['song']:
+                if temp['album']['name'] == album:
+                    self.download_track(href[href.find('tracks/')+7:])
+                    self.client.catalog_action('verify_catalog', self.catalog_id)
+                    sleep(0.5)
+                    self.client.playlist_add_song(playlist_id, temp['album']['id'], 1)
