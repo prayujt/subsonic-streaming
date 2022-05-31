@@ -8,6 +8,7 @@ import ampache
 import time
 import requests
 import json
+import unicodedata
 
 class Download:
     def __init__(self, API_KEY, access_token, url, username):
@@ -18,8 +19,20 @@ class Download:
         passphrase = self.client.encrypt_string(API_KEY, username)
         auth = self.client.handshake(url, passphrase)
 
+    def strip_accents(self, text):
+        try:
+            text = unicode(text, 'utf-8')
+        except NameError: # unicode is a default on python 3 
+            pass
+
+        text = unicodedata.normalize('NFD', text)\
+               .encode('ascii', 'ignore')\
+               .decode("utf-8")
+
+        return str(text)
+
     def clean(self, value):
-        value = value.replace('\'','').replace('\"','').replace('$','S').replace('/','').replace('#','').replace('?','').replace('!','')
+        value = self.strip_accents(value.replace('\'','').replace('\"','').replace('$','S').replace('/','').replace('#','').replace('?','').replace('!',''))
         return value
 
     def search(self, track, album, artist):
@@ -58,27 +71,28 @@ class Download:
         os.system('node /home/files/.scripts/music/youtube_mp3.js {0} \"{1}.mp3\" \"{2}\"'.format(video_id,new_track,location))
 
         file_location = location + '/' + new_track + '.mp3'
-        print(file_location)
-        try:
-            audiofile = eyed3.load(file_location)
-        except Exception as e:
-            return
-        audiofile.tag.title = track
-        audiofile.tag.album = album
-        audiofile.tag.artist = artist
-        audiofile.tag.release_date = release_date
-        audiofile.tag.recording_date = release_date
-        audiofile.tag.track_num = track_num
-        # audiofile.tag.images.set(img_url=cover_photo)
+        if os.path.isfile(file_location):
+            print(file_location)
+            try:
+                audiofile = eyed3.load(file_location)
+            except Exception as e:
+                return
+            audiofile.tag.title = track
+            audiofile.tag.album = album
+            audiofile.tag.artist = artist
+            audiofile.tag.release_date = release_date
+            audiofile.tag.recording_date = release_date
+            audiofile.tag.track_num = track_num
+            # audiofile.tag.images.set(img_url=cover_photo)
 
-        audiofile.tag.save()
+            audiofile.tag.save()
 
-        try:
-            self.client.catalog_action('add_to_catalog', self.catalog_id)
-            self.client.catalog_action('verify_catalog', self.catalog_id)
-            self.client.catalog_action('clean_catalog', self.catalog_id)
-        except json.decoder.JSONDecodeError:
-            pass
+            try:
+                self.client.catalog_action('add_to_catalog', self.catalog_id)
+                self.client.catalog_action('verify_catalog', self.catalog_id)
+                self.client.catalog_action('clean_catalog', self.catalog_id)
+            except json.decoder.JSONDecodeError:
+                pass
 
     def download_track(self, id_):
         r = requests.get('https://api.spotify.com/v1/tracks/{0}'.format(id_), headers={
