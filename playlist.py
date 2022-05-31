@@ -8,7 +8,7 @@ import json
 spotify_url = ''
 playlist_name = ''
 
-if len(sys.argv) == 1 and sys.argv[1] == 'shortcut':
+if len(sys.argv) == 2 and sys.argv[1] == 'shortcut':
     playlistFile = open('/home/files/.scripts/music/playlist.txt', 'r')
     lines = playlistFile.readlines()
     playlistFile.close()
