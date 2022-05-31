@@ -199,10 +199,16 @@ class Download:
         for song in playlist:
             album = song['track']['album']['name']
             songs = self.client.songs(filter_str=song['track']['name'], exact=1)
-            if songs['song'] == []:
+            found = False
+            for temp in songs['song']:
+                if temp['album']['name'] == album:
+                    found = True
+                    self.client.playlist_add_song(playlist_id, temp['id'], 1)
+            if not found:
                 href = song['track']['href']
                 self.download_track(href[href.find('tracks/')+7:])
                 songs = self.client.songs(filter_str=song['track']['name'], exact=1)
-            for temp in songs['song']:
-                if temp['album']['name'] == album:
-                    self.client.playlist_add_song(playlist_id, temp['id'], 1)
+                for temp in songs['song']:
+                    if temp['album']['name'] == album:
+                        found = True
+                        self.client.playlist_add_song(playlist_id, temp['id'], 1)
