@@ -5,9 +5,21 @@ import sys
 import requests
 import json
 
-if len(sys.argv) < 3:
+spotify_url = ''
+playlist_name = ''
+
+if len(sys.argv) == 1 and sys.argv[1] == 'shortcut':
+    playlistFile = open('/home/files/.scripts/music/playlist.txt', 'r')
+    lines = playlistFile.readlines()
+    playlistFile.close()
+    spotify_url = lines[0]
+    playlist_name = lines[1]
+elif len(sys.argv) < 3:
     print("not enough arguments")
     sys.exit()
+else:
+    spotify_url = sys.argv[1]
+    playlist_name = sys.argv[2]
 
 config = dotenv_values()
 
@@ -23,4 +35,4 @@ access_token = response['access_token']
 
 client = download.Download(config['API_KEY'], access_token, config['AMPACHE_URL'], config['AMPACHE_USERNAME'])
 
-client.download_playlist(sys.argv[1], sys.argv[2])
+client.download_playlist(spotify_url, playlist_name)
