@@ -32,7 +32,7 @@ class Download:
         return str(text)
 
     def clean(self, value):
-        value = self.strip_accents(value.replace('\'','').replace('\"','').replace('$','S').replace('/','').replace('#','').replace('?','').replace('!',''))
+        value = self.strip_accents(value.replace('\'','').replace('\"','').replace('$','S').replace('/','').replace('#','').replace('?','').replace('!','').replace(':', '').replace('>', '').replace('<', '').replace('*', '').replace('|', ''))
         return value
 
     def search(self, track, album, artist):
@@ -55,7 +55,7 @@ class Download:
             video_id = self.search(track, album, artist)
         new_artist = self.clean(artist)
         new_album = self.clean(album)
-        new_track = self.clean(track)
+        new_track = self.clean(track).replace('.', '')
         artistExists = os.path.isdir('/home/files/Music/{0}'.format(new_artist))
         albumExists = os.path.isdir('/home/files/Music/{0}/{1}'.format(new_artist, new_album))
         trackExists = os.path.isfile('/home/files/Music/{0}/{1}/{2}.mp3'.format(new_artist, new_album, new_track))
@@ -201,15 +201,7 @@ class Download:
         time.sleep(1)
         self.client.catalog_action('verify_catalog', self.catalog_id)
 
-    def download_playlist(self, spotify_url, playlist_name):
-        playlist_id = self.client.playlist_create(playlist_name, 'private')['id']
-        id_ = spotify_url[spotify_url.find('playlist/')+9:]
-        r = requests.get('https://api.spotify.com/v1/playlists/{0}'.format(id_), headers={
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer {token}'.format(token=self.access_token),
-        })
-        text = json.loads(r.text)
-        playlist = text['tracks']['items']
+    def playlist_loop(self, playlist, playlist_id):
         for song in playlist:
             album = song['track']['album']['name']
             songs = self.client.songs(filter_str=song['track']['name'], exact=1)
@@ -226,3 +218,24 @@ class Download:
                     if temp['album']['name'] == album:
                         found = True
                         self.client.playlist_add_song(playlist_id, temp['id'], 1)
+
+    def download_playlist(self, spotify_url, playlist_name):
+        playlist_id = self.client.playlist_create(playlist_name, 'private')['id']
+        id_ = spotify_url[spotify_url.find('playlist/')+9:]
+        r = requests.get('https://api.spotify.com/v1/playlists/{0}'.format(id_), headers={
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer {token}'.format(token=self.access_token),
+        })
+        text = json.loads(r.text)
+        playlist = text['tracks']['items']
+        self.playlist_loop(playlist, playlist_id)
+        _next = text['tracks']['next']
+        while _next != None:
+            r = requests.get(_next, headers={
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer {token}'.format(token=self.access_token),
+            })
+            text = json.loads(r.text)
+            playlist = text['items']
+            _next = text['next']
+            self.playlist_loop(playlist, playlist_id)
