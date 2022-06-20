@@ -4,6 +4,7 @@ import re
 import sys
 import os
 import eyed3
+from eyed3.id3.frames import ImageFrame
 import ampache
 import time
 import requests
@@ -49,7 +50,7 @@ class Download:
         video_id = video_ids[0]
         return video_id
 
-    def get_video(self, track, album, artist, release_date, track_num, video_id):
+    def get_video(self, track, album, artist, release_date, track_num, cover_art, video_id):
         if video_id == '':
             video_id = self.search(track, album, artist)
         new_artist = self.clean(artist)
@@ -68,7 +69,6 @@ class Download:
                 os.system('mkdir \"/home/files/Music/{0}/{1}\"'.format(new_artist, new_album))
         file_location = '/home/files/Music/{0}/{1}/{2}.mp3'.format(new_artist, new_album, new_track)
         os.system("/home/files/.local/bin/yt-dlp -f \"ba\" -x --audio-format mp3 https://www.youtube.com/watch?v={0} -o \"{1}\"".format(video_id, file_location))
-        #os.system('node /home/files/.scripts/music/youtube_mp3.js {0} \"{1}.mp3\" \"{2}\"'.format(video_id,new_track,location))
 
         if os.path.isfile(file_location):
             try:
@@ -81,9 +81,10 @@ class Download:
             audiofile.tag.release_date = release_date
             audiofile.tag.recording_date = release_date
             audiofile.tag.track_num = track_num
-            # audiofile.tag.images.set(img_url=cover_photo)
+            img_data = requests.get(cover_art).content
+            audiofile.tag.images.set(ImageFrame.FRONT_COVER, img_data, 'image/jpeg')
 
-            audiofile.tag.save()
+            audiofile.tag.save(version=eyed3.id3.ID3_V2_3)
 
             try:
                 self.client.catalog_file(file_location, 'add', self.catalog_id)
@@ -102,7 +103,8 @@ class Download:
         album_name = response['album']['name']
         release_date = response['album']['release_date']
         artist_name = response['album']['artists'][0]['name']
-        return self.get_video(response['name'], album_name, artist_name, release_date, response['track_number'], '')
+        cover_art = response['album']['images'][0]['url']
+        return self.get_video(response['name'], album_name, artist_name, release_date, response['track_number'], cover_art, '')
 
     def download_album(self, id_):
         r = requests.get('https://api.spotify.com/v1/albums/{0}'.format(id_), headers={
@@ -114,10 +116,10 @@ class Download:
         album_name = response['name']
         release_date = response['release_date']
         artist_name = response['artists'][0]['name']
-        #cover_art = response['images'][0]['url']
+        cover_art = response['images'][0]['url']
 
         for track in response['tracks']['items']:
-            self.get_video(track['name'], album_name, artist_name, release_date, track['track_number'], '')
+            self.get_video(track['name'], album_name, artist_name, release_date, track['track_number'], cover_art, '')
 
     def download_artist(self, id_):
         albums = ''
@@ -143,10 +145,10 @@ class Download:
             album_name = album['name']
             release_date = album['release_date']
             artist_name = album['artists'][0]['name']
-            #cover_art = album['images'][0]['url']
+            cover_art = album['images'][0]['url']
             for track in album['tracks']['items']:
                 track_num = track['track_number']
-                self.get_video(track['name'], album_name, artist_name, release_date, track_num, '')
+                self.get_video(track['name'], album_name, artist_name, release_date, track_num, cover_art, '')
 
     def download_hindi(self, music_type, id_):
         if music_type == 'track':
@@ -179,6 +181,7 @@ class Download:
             sys.exit()
         release_date = response['album']['release_date']
         artist_name = response['album']['artists'][0]['name']
+        cover_art = response['album']['images'][0]['url']
         track_name = response['name']
         track_number = response['track_number']
         new_track = self.clean(track_name)
@@ -190,7 +193,7 @@ class Download:
         if trackExists:
             os.system('rm \"{0}\"'.format(filePath))
 
-        self.get_video(track_name, album_name, artist_name, release_date, track_number, youtube_url[youtube_url.find('v=')+2:])
+        self.get_video(track_name, album_name, artist_name, release_date, track_number, cover_art, youtube_url[youtube_url.find('v=')+2:])
 
     def playlist_loop(self, playlist, playlist_id):
         for song in playlist:
