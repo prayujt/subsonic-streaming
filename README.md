@@ -3,7 +3,8 @@ Python script that communicates with Apple's Shortcuts to add songs to a private
 Includes crontab script to be run every minute to update Ampache database.
 
 ## Link to Apple Shortcut
-https://www.icloud.com/shortcuts/e503330f5aa8441f9388c2307c1fc3ef
+* [Download Songs](https://www.icloud.com/shortcuts/e503330f5aa8441f9388c2307c1fc3ef)
+* [Sync Spotify Playlist](https://www.icloud.com/shortcuts/3e824c46de07487d8558a48ddea61018)
 
 ## Dependencies
 ### Python
@@ -11,10 +12,9 @@ https://www.icloud.com/shortcuts/e503330f5aa8441f9388c2307c1fc3ef
 * ampache
 * dotenv
 * eyed3
-
-### NodeJS
-* youtube-mp3-downloader
+* spotdl
+* pytube
+* yt-dlp 
 
 ## TODO
-* Add support for ID3 tag additions for albums/songs with unsupported ASCII characters + emojis
-* Add support for migrating Spotify playlists into Ampache playlists
+* Allow replacement of .mp4 files with same tags and custom selected YouTube links
