@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import urllib.request
-import eyed3
 import requests
 import json
 from dotenv import dotenv_values
@@ -26,14 +25,14 @@ choices_file.write(access_token + '\n')
 value = ''
 for i in range(0, len(lines)):
     line = lines[i]
-    song_count = 5
+    song_count = 10
     album_count = 5
-    artist_count = 2
-    hindi = False
+    artist_count = 3
+#    hindi = False
 
-    if line.startswith('hindi') or line.endswith('hindi') or line.startswith('Hindi') or line.endswith('Hindi'):
-        hindi = True
-        line = line.replace('hindi', '').replace('Hindi', '')
+#    if line.startswith('hindi') or line.endswith('hindi') or line.startswith('Hindi') or line.endswith('Hindi'):
+#        hindi = True
+#        line = line.replace('hindi', '').replace('Hindi', '')
 
     query = line.strip().replace(' ', '%20')
 
@@ -58,32 +57,41 @@ for i in range(0, len(lines)):
         add = '\n'
         if album_count == 0 and artist_count == 0 and j == song_count - 1 and i == len(lines) - 1:
             add = ''
+        if len(songList) == 0:
+            value += 'No tracks found' + add
+            break
         song = songList[j]
         track = song['name']
         album = song['album']['name']
         artist = song['album']['artists'][0]['name']
         release_date = song['album']['release_date']
         value += artist + ' - ' + track + ' [' + album + ']' + add
-        if hindi:
-            add = ' hindi' + add
+        #if hindi:
+        #    add = ' hindi' + add
         choices_file.write(song['id'] + ' track' + add)
     for j in range(0, album_count):
         add = '\n'
         if artist_count == 0 and j == album_count - 1 and i == len(lines) - 1:
             add = ''
+        if len(albumList) == 0:
+            value += 'No albums found' + add
+            break
         album = albumList[j]
         value += 'Album: ' + album['name'] + ' [' + album['artists'][0]['name'] + ']' + add
-        if hindi:
-            add = ' hindi' + add
+        #if hindi:
+        #    add = ' hindi' + add
         choices_file.write(album['id'] + ' album' + add)
     for j in range(0, artist_count):
         add = '\n'
         if j == artist_count - 1 and i == len(lines) - 1:
             add = ''
+        if len(artistList) == 0:
+            value += 'No artists found' + add
+            break
         artist = artistList[j]
         value += 'Artist: ' + artist['name'] + add
-        if hindi:
-            add = ' hindi' + add
+        #if hindi:
+        #    add = ' hindi' + add
         choices_file.write(artist['id'] + ' artist' + add)
     if not i == len(lines) - 1:
         value += '----------\n'

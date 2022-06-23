@@ -5,7 +5,7 @@ import sys
 import requests
 import json
 
-if len(sys.argv) < 3:
+if len(sys.argv) < 3 && sys.argv[1] != 'shortcut':
     print("not enough arguments")
     sys.exit()
 
@@ -23,4 +23,7 @@ access_token = response['access_token']
 
 client = download.Download(config['API_KEY'], access_token, config['AMPACHE_URL'], config['AMPACHE_USERNAME'])
 
-client.download_track_manual(sys.argv[1], sys.argv[2])
+if (len(sys.argv) == 1):
+    pass
+else:
+    client.download_track_manual(sys.argv[1], sys.argv[2])

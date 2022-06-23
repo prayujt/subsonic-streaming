@@ -1,4 +1,5 @@
 *.txt
+*.json
 .env
 node_modules
 .spotdl-cache
