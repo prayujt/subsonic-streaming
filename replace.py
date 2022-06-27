@@ -5,7 +5,7 @@ import sys
 import requests
 import json
 
-if len(sys.argv) < 3 && sys.argv[1] != 'shortcut':
+if len(sys.argv) < 3 and sys.argv[1] != 'shortcut':
     print("not enough arguments")
     sys.exit()
 
@@ -21,9 +21,31 @@ r = requests.post('https://accounts.spotify.com/api/token', {
 response = json.loads(r.text)
 access_token = response['access_token']
 
-client = download.Download(config['API_KEY'], access_token, config['AMPACHE_URL'], config['AMPACHE_USERNAME'])
+client = download.Download(client_id, secret, config['API_KEY'], config['AMPACHE_URL'], config['AMPACHE_USERNAME'], access_token)
 
-if (len(sys.argv) == 1):
-    pass
+if (len(sys.argv) == 2):
+    temp_file = open('/home/files/.scripts/music/choices.json', 'r')
+    choices = temp_file.readlines()
+    temp_file.close()
+
+    temp_file = open('/home/files/.scripts/music/temp2.txt', 'r')
+    temp1 = temp_file.readlines()
+    temp_file.close()
+
+    temp_file = open('/home/files/.scripts/music/choices2.json', 'r')
+    yt_choices = temp_file.readlines()
+    temp_file.close()
+
+    temp_file = open('/home/files/.scripts/music/temp3.txt', 'r')
+    temp2 = temp_file.readlines()
+    temp_file.close()
+
+    for i in range(1, len(temp1)):
+        choice = json.loads(choices[i-1])[int(temp1[i])-1]
+        track = choice['track']
+        album = choice['album']
+        artist = choice['artist']
+        id_ = json.loads(yt_choices[i-1])[int(temp2[i])-1]
+        client.replace_song(track, album, artist, id_)
 else:
     client.download_track_manual(sys.argv[1], sys.argv[2])

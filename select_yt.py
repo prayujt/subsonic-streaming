@@ -23,7 +23,7 @@ for i in range(0, len(lines)):
     choices2_file.write('[')
     if (len(results) == 0):
         print('No songs found')
-        choices2_file.write('0]')
+        choices2_file.write('\"0\"]')
         if not i == len(lines) - 1:
             value += '----------\n'
             choices2_file.write('\n')
@@ -39,7 +39,7 @@ for i in range(0, len(lines)):
         published = video['publish_time']
         value += '{0} ({1}) [{2}]'.format(title, duration, channel)
 
-        choices2_file.write(_id)
+        choices2_file.write('\"' + _id + '\"')
         if j != len(results['videos']) - 1:
             choices2_file.write(',')
             value += '\n'

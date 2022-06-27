@@ -44,7 +44,7 @@ class Download:
 
         return str(text)
 
-    def tag_file(self, file_location, track, album, artist, release_date, track_num, cover_art):
+    def tag_file(self, file_location, track, album, artist, release_date, track_num, cover_art=None, img_data=None):
         if os.path.isfile(file_location):
             try:
                 audiofile = eyed3.load(file_location)
@@ -58,7 +58,8 @@ class Download:
             audiofile.tag.recording_date = release_date
             audiofile.tag.track_num = track_num
             audiofile.tag.genre = ''
-            img_data = requests.get(cover_art).content
+            if cover_art != None:
+                img_data = requests.get(cover_art).content
             audiofile.tag.images.set(ImageFrame.FRONT_COVER, img_data, 'image/jpeg')
 
             audiofile.tag.save(version=eyed3.id3.ID3_V2_3)
@@ -72,7 +73,7 @@ class Download:
             return file_location
 
     def clean(self, value):
-        value = self.strip_accents(value.replace('\'','').replace('\"','').replace('$','S').replace('/','').replace('#','').replace('?','').replace('!','').replace(':', '').replace('>', '').replace('<', '').replace('*', '').replace('|', ''))
+        value = self.strip_accents(value.replace('\'','').replace('\"','').replace('$','S').replace('/','').replace('#','').replace('?','').replace('!','').replace(':', '').replace('>', '').replace('<', '').replace('*', '').replace('|', '').replace('.', ''))
         return value
 
     def search(self, track, album, artists):
@@ -93,7 +94,7 @@ class Download:
     def get_video(self, track, album, artist, video_id):
         new_artist = self.clean(artist)
         new_album = self.clean(album)
-        new_track = self.clean(track).replace('.', '')
+        new_track = self.clean(track)
         artistExists = os.path.isdir('/home/files/Music/{0}'.format(new_artist))
         albumExists = os.path.isdir('/home/files/Music/{0}/{1}'.format(new_artist, new_album))
         trackExists = os.path.isfile('/home/files/Music/{0}/{1}/{2}.mp3'.format(new_artist, new_album, new_track))
@@ -130,6 +131,7 @@ class Download:
         path = self.get_video(track, album, artist, song_obj.youtube_link)
         if path != None:
             self.tag_file(path, track, album, artist, release_date, track_num, cover_art)
+        return path
 
     def download_album(self, id_):
         query = ['https://open.spotify.com/album/{0}'.format(id_)]
@@ -155,7 +157,7 @@ class Download:
 
     def download_artist(self, id_):
         query = ['https://open.spotify.com/artist/{0}'.format(id_)]
-        song_obj = parse_query(
+        _song_obj = parse_query(
             query,
             'mp3',
             False,
@@ -164,8 +166,11 @@ class Download:
             4,
             None
         )
-        for song in song_obj:
-            track = song_obj.song_name
+        for song_obj in _song_obj:
+            try:
+                track = song_obj.song_name
+            except AttributeError:
+                continue
             album = song_obj.album_name
             artist = song_obj.contributing_artists[0]
             release_date = song_obj.album_release
@@ -259,3 +264,50 @@ class Download:
     def search_song(self, query, exact_):
         songs = self.client.songs(filter_str=query, exact=exact_)
         return songs
+
+    def replace_song(self, track, album, artist, id_):
+        file_path = '/home/files/Music/{0}/{1}/{2}.mp3'.format(self.clean(artist), self.clean(album), self.clean(track))
+        trackExists = os.path.isfile(file_path)
+        print(file_path)
+        if trackExists:
+            try:
+                copy_file = eyed3.load(file_path)
+            except Exception as e:
+                print('couldn\'t load file to set tags')
+                return
+            title = copy_file.tag.title
+            album = copy_file.tag.album
+            artist = copy_file.tag.artist
+            release_date = copy_file.tag.release_date
+            track_num = copy_file.tag.track_num
+            image_data = ''
+            if title == '':
+                return
+
+            try:
+                image_data = copy_file.tag.images[0].image_data
+            except IndexError:
+                print('could not load any cover art')
+
+            os.system('rm \"{0}\"'.format(file_path))
+
+            path = self.get_video(track, album, artist, id_)
+            if image_data != '':
+                self.tag_file(path, title, album, artist, release_date, track_num, img_data=image_data)
+            else:
+                try:
+                    audiofile = eyed3.load(file_location)
+                except Exception as e:
+                    print('couldn\'t load file to set tags')
+                    return
+                audiofile.tag.title = title
+                audiofile.tag.album = album
+                audiofile.tag.artist = artist
+                audiofile.tag.release_date = release_date
+                audiofile.tag.recording_date = release_date
+                audiofile.tag.track_num = track_num
+                audiofile.tag.genre = ''
+                if image_data != '':
+                    audiofile.tag.images.set(ImageFrame.FRONT_COVER, image_data, 'image/jpeg')
+
+                audiofile.tag.save(version=eyed3.id3.ID3_V2_3)

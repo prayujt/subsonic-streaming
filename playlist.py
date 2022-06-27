@@ -8,7 +8,7 @@ import json
 spotify_url = ''
 playlist_name = ''
 username = ''
-API_KEY = ''
+api_key = ''
 
 config = dotenv_values()
 
@@ -17,7 +17,7 @@ if len(sys.argv) == 2 and sys.argv[1] == 'shortcut':
     lines = playlistFile.readlines()
     playlistFile.close()
     username = lines[0].strip()
-    API_KEY = lines[1].strip()
+    api_key = lines[1].strip()
     spotify_url = lines[2].strip()
     playlist_name = lines[3].strip()
 elif len(sys.argv) < 3:
@@ -25,7 +25,7 @@ elif len(sys.argv) < 3:
     sys.exit()
 else:
     username = config['AMPACHE_USERNAME']
-    API_KEY = config['API_KEY']
+    api_key = config['API_KEY']
     spotify_url = sys.argv[1]
     playlist_name = sys.argv[2]
 
@@ -39,6 +39,6 @@ r = requests.post('https://accounts.spotify.com/api/token', {
 response = json.loads(r.text)
 access_token = response['access_token']
 
-client = download.Download(API_KEY, access_token, config['AMPACHE_URL'], username)
+client = download.Download(client_id, secret, api_key, config['AMPACHE_URL'], username, access_token)
 
 client.download_playlist(spotify_url, playlist_name)
