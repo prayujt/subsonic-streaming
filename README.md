@@ -1,5 +1,5 @@
-# Amperfy + Apple Shortcuts
-Python script that communicates with Apple's Shortcuts to add songs to a private music server running on the Subsonic API.
+# Subsonic + Apple Shortcuts
+Python script that allows Apple's Shortcuts to communicate with the Subsonic API to queue songs to download to a private Subsonic music server.
 Includes crontab script to be run every minute to update Subsonic database.
 
 ## Link to Apple Shortcut
@@ -16,6 +16,3 @@ Includes crontab script to be run every minute to update Subsonic database.
 * spotdl
 * pytube
 * yt-dlp 
-
-## TODO
-* Allow replacement of .mp4 files with same tags and custom selected YouTube links
