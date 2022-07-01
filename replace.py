@@ -21,7 +21,7 @@ r = requests.post('https://accounts.spotify.com/api/token', {
 response = json.loads(r.text)
 access_token = response['access_token']
 
-client = download.Download(client_id, secret, config['API_KEY'], config['AMPACHE_URL'], config['AMPACHE_USERNAME'], access_token)
+client = download.Download(client_id, secret, config['SUBSONIC_URL'], config['SUBSONIC_PORT'], config['SUBSONIC_USERNAME'], config['SUBSONIC_PASSWORD'], access_token)
 
 if (len(sys.argv) == 2):
     temp_file = open('/home/files/.scripts/music/choices.json', 'r')

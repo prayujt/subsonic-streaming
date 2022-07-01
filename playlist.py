@@ -39,6 +39,6 @@ r = requests.post('https://accounts.spotify.com/api/token', {
 response = json.loads(r.text)
 access_token = response['access_token']
 
-client = download.Download(client_id, secret, config['SUBSONIC_URL'], username, password, access_token)
+client = download.Download(client_id, secret, config['SUBSONIC_URL'], config['SUBSONIC_PORT'], username, password, access_token)
 
 client.download_playlist(spotify_url, playlist_name)

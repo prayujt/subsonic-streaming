@@ -28,11 +28,6 @@ for i in range(0, len(lines)):
     song_count = 10
     album_count = 5
     artist_count = 3
-#    hindi = False
-
-#    if line.startswith('hindi') or line.endswith('hindi') or line.startswith('Hindi') or line.endswith('Hindi'):
-#        hindi = True
-#        line = line.replace('hindi', '').replace('Hindi', '')
 
     query = line.strip().replace(' ', '%20')
 
@@ -66,8 +61,6 @@ for i in range(0, len(lines)):
         artist = song['album']['artists'][0]['name']
         release_date = song['album']['release_date']
         value += artist + ' - ' + track + ' [' + album + ']' + add
-        #if hindi:
-        #    add = ' hindi' + add
         choices_file.write(song['id'] + ' track' + add)
     for j in range(0, album_count):
         add = '\n'
@@ -78,8 +71,6 @@ for i in range(0, len(lines)):
             break
         album = albumList[j]
         value += 'Album: ' + album['name'] + ' [' + album['artists'][0]['name'] + ']' + add
-        #if hindi:
-        #    add = ' hindi' + add
         choices_file.write(album['id'] + ' album' + add)
     for j in range(0, artist_count):
         add = '\n'
@@ -90,8 +81,6 @@ for i in range(0, len(lines)):
             break
         artist = artistList[j]
         value += 'Artist: ' + artist['name'] + add
-        #if hindi:
-        #    add = ' hindi' + add
         choices_file.write(artist['id'] + ' artist' + add)
     if not i == len(lines) - 1:
         value += '----------\n'

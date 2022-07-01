@@ -15,9 +15,9 @@ from spotdl.parsers import parse_query
 from spotdl.search import SpotifyClient
 
 class Download:
-    def __init__(self, client_id, client_secret, url, username, password, access_token=None):
+    def __init__(self, client_id, client_secret, url, port, username, password, access_token=None):
         self.access_token = access_token
-        self.client = libsonic.Connection('http://prayujt.com', username, password, 4040)
+        self.client = libsonic.Connection(url, username, password, port)
         try:
             SpotifyClient.init(
                 client_id=client_id,
@@ -26,6 +26,14 @@ class Download:
             )
         except Exception:
             pass
+
+    
+    def simplifyQuery(self, value):
+        characters = ['(', '[', '{', '-', ')', ']', '}']
+        for character in characters:
+            value = value.replace(character, '')
+        value = value.replace(':', ' ')
+        return value
 
     def strip_accents(self, text):
         try:
@@ -229,7 +237,7 @@ class Download:
         for song in playlist:
             print(song['track']['name'])
             album = song['track']['album']['name']
-            songs = self.client.search2(song['track']['name'])['searchResult2']
+            songs = self.client.search2(self.simplifyQuery(song['track']['name']))['searchResult2']
             found = False
             if not songs == {}:
                 for temp in songs['song']:
@@ -244,9 +252,9 @@ class Download:
                 if path == None:
                     print('Error')
                     continue
-                songs = self.client.search2(song['track']['name'])['searchResult2']
+                songs = self.client.search2(self.simplifyQuery(song['track']['name']))['searchResult2']
                 while len(songs['song']) == 0:
-                    songs = self.client.search2(song['track']['name'])['searchResult2']
+                    songs = self.client.search2(self.simplifyQuery(song['track']['name']))['searchResult2']
                 for temp2 in songs['song']:
                     if temp2['album'] == album:
                         print(temp2['album'])
@@ -277,7 +285,7 @@ class Download:
             self.playlist_loop(playlist, playlist_id)
 
     def search_song(self, query):
-        songs = self.client.search2(query)['searchResult2']
+        songs = self.client.search2(self.simplifyQuery(query))['searchResult2']
         return songs
 
     def replace_song(self, track, album, artist, id_):

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 import requests
-import ampache
+import libsonic
 import json
 from dotenv import dotenv_values
+import sys
 
 config = dotenv_values()
 
@@ -10,28 +11,36 @@ songs = open('/home/files/.scripts/music/temp.txt', 'r')
 lines = songs.readlines()
 songs.close()
 
-API_KEY = config['API_KEY']
-URL = config['AMPACHE_URL']
-USERNAME = config['AMPACHE_USERNAME']
-CATALOG_ID = 3
-client = ampache.API()
-client.set_format('json')
-passphrase = client.encrypt_string(API_KEY, USERNAME)
-auth = client.handshake(URL, passphrase)
+url = config['SUBSONIC_URL']
+port = config['SUBSONIC_PORT']
+username = config['SUBSONIC_USERNAME']
+password = config['SUBSONIC_PASSWORD']
+
+connection = libsonic.Connection(url, username, password, port)
 
 choices_file = open('/home/files/.scripts/music/choices.json', 'w')
 value = ''
+
+def simplifyQuery(value):
+    characters = ['(', '[', '{', '-', ')', ']', '}']
+    for character in characters:
+        value = value.replace(character, '')
+    value = value.replace(':', ' ')
+    return value
+
 for i in range(0, len(lines)):
     line = lines[i].strip()
-    songs = client.songs(filter_str=line, exact=0)['song']
+    songs = connection.search2(simplifyQuery(line))['searchResult2']
+
     choices_file.write('[')
-    if (len(songs) == 0):
+    if not 'song' in songs:
         print('No songs found')
         json_object = json.dumps(_obj, indent = 4)
         choices_file.write(']\n')
         if not i == len(lines) - 1:
             value += '----------\n'
         continue
+    songs = songs['song']
 
     for j in range(0, len(songs)):
         add = '\n'
@@ -39,8 +48,8 @@ for i in range(0, len(lines)):
             add = ''
         song = songs[j]
         track = song['title']
-        album = song['album']['name']
-        artist = song['artist']['name']
+        album = song['album']
+        artist = song['artist']
         number = song['id']
         value += artist + ' - ' + track + ' [' + album + ']' + add
 
