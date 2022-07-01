@@ -107,8 +107,11 @@ class Download:
             if not albumExists:
                 os.system('mkdir \"/home/files/Music/{0}/{1}\"'.format(new_artist, new_album))
         file_location = '/home/files/Music/{0}/{1}/{2}.mp3'.format(new_artist, new_album, new_track)
-        #os.system("/home/files/.local/bin/yt-dlp -f \"ba\" -x --audio-format mp3 https://www.youtube.com/watch?v={0} -o \"{1}\"".format(video_id, file_location))
-        os.system("/home/files/.local/bin/yt-dlp -f \"ba\" -x --audio-format mp3 {0} -o \"{1}\"".format(video_id, file_location))
+        if not new_track == '':
+            os.system("/home/files/.local/bin/yt-dlp -f \"ba\" -x --audio-format mp3 {0} -o \"{1}\"".format(video_id, file_location))
+        else:
+            print('invalid characters')
+            return None
         return file_location
 
     def download_track(self, id_):
@@ -218,12 +221,13 @@ class Download:
             print(song['track']['name'])
             album = song['track']['album']['name']
             songs = self.client.songs(filter_str=song['track']['name'], exact=1)
-            print(songs)
+            #print(songs)
             found = False
             for temp in songs['song']:
                 if temp['album']['name'] == album:
                     found = True
-                    self.client.playlist_add_song(playlist_id, temp['id'], 1)
+                    print('adding to playlist')
+                    self.client.playlist_add_song(playlist_id, temp['id'], 0)
                     break
             if not found:
                 href = song['track']['href']
@@ -235,11 +239,14 @@ class Download:
                 while len(songs['song']) == 0:
                     result = self.client.catalog_file(path, 'add', self.catalog_id)
                     songs = self.client.songs(filter_str=song['track']['name'], exact=1)
-                for temp in songs['song']:
-                    if temp['album']['name'] == album:
+                for temp2 in songs['song']:
+                    if temp2['album']['name'] == album:
+                        print(temp2['album']['name'])
+                        print(album)
+                        print('adding to playlist')
                         found = True
-                        self.client.playlist_add_song(playlist_id, temp['id'], 1)
-
+                        self.client.playlist_add_song(playlist_id, temp2['id'], 0)
+                    
     def download_playlist(self, spotify_url, playlist_name):
         playlist_id = self.client.playlist_create(playlist_name, 'private')['id']
         id_ = spotify_url[spotify_url.find('playlist/')+9:]
