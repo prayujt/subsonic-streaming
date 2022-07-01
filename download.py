@@ -5,24 +5,19 @@ import sys
 import os
 import eyed3
 from eyed3.id3.frames import ImageFrame
-import ampache
 import time
 import requests
 import json
 import unicodedata
+import libsonic
 
 from spotdl.parsers import parse_query
 from spotdl.search import SpotifyClient
 
 class Download:
-    def __init__(self, client_id, client_secret, api_key, ampache_url, username, access_token=None):
-        self.catalog_id = 3
-        self.client = ampache.API()
-        self.client.set_format('json')
+    def __init__(self, client_id, client_secret, url, username, password, access_token=None):
         self.access_token = access_token
-        passphrase = self.client.encrypt_string(api_key, username)
-        auth = self.client.handshake(ampache_url, passphrase)
-
+        self.client = libsonic.Connection('http://prayujt.com', username, password, 4040)
         try:
             SpotifyClient.init(
                 client_id=client_id,
@@ -44,6 +39,24 @@ class Download:
 
         return str(text)
 
+    def add_to_playlist(self, playlist_id, song_id):
+        playlist = self.client.getPlaylist(playlist_id)['playlist']
+        song_ids = []
+        if 'entry' in playlist:
+            for song in playlist['entry']:
+                song_ids.append(song['id']) 
+        song_ids.append(song_id)
+        self.client.createPlaylist(playlistId=playlist_id, songIds=song_ids)
+
+    def wait_for_sync(self):
+        self.client.startScan()
+        print('scanning')
+        status = self.client.getScanStatus()
+        while (status['scanStatus']['scanning'] == True):
+            status = self.client.getScanStatus()
+        print('finished scanning')
+        return
+
     def tag_file(self, file_location, track, album, artist, release_date, track_num, cover_art=None, img_data=None):
         if os.path.isfile(file_location):
             try:
@@ -64,12 +77,8 @@ class Download:
 
             audiofile.tag.save(version=eyed3.id3.ID3_V2_3)
 
-            try:
-                self.client.catalog_file(file_location, 'add', self.catalog_id)
-                self.client.catalog_action('gather_art', self.catalog_id)
-            except json.decoder.JSONDecodeError:
-                print('failed to add to catalog')
-                pass
+            self.wait_for_sync()
+
             return file_location
 
     def clean(self, value):
@@ -220,35 +229,34 @@ class Download:
         for song in playlist:
             print(song['track']['name'])
             album = song['track']['album']['name']
-            songs = self.client.songs(filter_str=song['track']['name'], exact=1)
-            #print(songs)
+            songs = self.client.search2(song['track']['name'])['searchResult2']
             found = False
-            for temp in songs['song']:
-                if temp['album']['name'] == album:
-                    found = True
-                    print('adding to playlist')
-                    self.client.playlist_add_song(playlist_id, temp['id'], 0)
-                    break
+            if not songs == {}:
+                for temp in songs['song']:
+                    if temp['album'] == album:
+                        found = True
+                        print('adding to playlist')
+                        self.add_to_playlist(playlist_id, temp['id'])
+                        break
             if not found:
                 href = song['track']['href']
                 path = self.download_track(href[href.find('tracks/')+7:])
                 if path == None:
                     print('Error')
                     continue
-                songs = self.client.songs(filter_str=song['track']['name'], exact=1)
+                songs = self.client.search2(song['track']['name'])['searchResult2']
                 while len(songs['song']) == 0:
-                    result = self.client.catalog_file(path, 'add', self.catalog_id)
-                    songs = self.client.songs(filter_str=song['track']['name'], exact=1)
+                    songs = self.client.search2(song['track']['name'])['searchResult2']
                 for temp2 in songs['song']:
-                    if temp2['album']['name'] == album:
-                        print(temp2['album']['name'])
+                    if temp2['album'] == album:
+                        print(temp2['album'])
                         print(album)
                         print('adding to playlist')
                         found = True
-                        self.client.playlist_add_song(playlist_id, temp2['id'], 0)
+                        self.add_to_playlist(playlist_id, temp2['id'])
                     
     def download_playlist(self, spotify_url, playlist_name):
-        playlist_id = self.client.playlist_create(playlist_name, 'private')['id']
+        playlist_id = self.client.createPlaylist(name=playlist_name, songIds=[])['playlist']['id']
         id_ = spotify_url[spotify_url.find('playlist/')+9:]
         r = requests.get('https://api.spotify.com/v1/playlists/{0}'.format(id_), headers={
             'Content-Type': 'application/json',
@@ -268,8 +276,8 @@ class Download:
             _next = text['next']
             self.playlist_loop(playlist, playlist_id)
 
-    def search_song(self, query, exact_):
-        songs = self.client.songs(filter_str=query, exact=exact_)
+    def search_song(self, query):
+        songs = self.client.search2(query)['searchResult2']
         return songs
 
     def replace_song(self, track, album, artist, id_):

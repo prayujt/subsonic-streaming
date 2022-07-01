@@ -8,7 +8,7 @@ import json
 spotify_url = ''
 playlist_name = ''
 username = ''
-api_key = ''
+password = ''
 
 config = dotenv_values()
 
@@ -17,15 +17,15 @@ if len(sys.argv) == 2 and sys.argv[1] == 'shortcut':
     lines = playlistFile.readlines()
     playlistFile.close()
     username = lines[0].strip()
-    api_key = lines[1].strip()
+    password = lines[1].strip()
     spotify_url = lines[2].strip()
     playlist_name = lines[3].strip()
 elif len(sys.argv) < 3:
     print("not enough arguments")
     sys.exit()
 else:
-    username = config['AMPACHE_USERNAME']
-    api_key = config['API_KEY']
+    username = config['SUBSONIC_USERNAME']
+    password = config['SUBSONIC_PASSWORD']
     spotify_url = sys.argv[1]
     playlist_name = sys.argv[2]
 
@@ -39,6 +39,6 @@ r = requests.post('https://accounts.spotify.com/api/token', {
 response = json.loads(r.text)
 access_token = response['access_token']
 
-client = download.Download(client_id, secret, api_key, config['AMPACHE_URL'], username, access_token)
+client = download.Download(client_id, secret, config['SUBSONIC_URL'], username, password, access_token)
 
 client.download_playlist(spotify_url, playlist_name)

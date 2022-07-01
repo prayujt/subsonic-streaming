@@ -24,15 +24,12 @@ for i in range(0, len(items)):
     array = items[i].split('\n')
     music.append(array[int(choices[i+1].strip()) - 1])
 
-client = download.Download(config['CLIENT_ID'], config['CLIENT_SECRET'], config['API_KEY'], config['AMPACHE_URL'], config['AMPACHE_USERNAME'], access_token)
+client = download.Download(config['CLIENT_ID'], config['CLIENT_SECRET'], config['SUBSONIC_URL'], config['SUBSONIC_USERNAME'], config['SUBSONIC_PASSWORD'], access_token)
 for value in music:
     split_value = value.split()
     id_ = split_value[0]
     music_type = split_value[1]
-    #client.download(music_type, id_)
 
-    #if len(split_value) == 3:
-    #    client.download_hindi(music_type, id_)
     if music_type == 'track':
         client.download_track(id_)
     elif music_type == 'album':
