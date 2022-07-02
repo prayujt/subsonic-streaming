@@ -239,7 +239,7 @@ class Download:
             album = song['track']['album']['name']
             songs = self.client.search2(self.simplifyQuery(song['track']['name']))['searchResult2']
             found = False
-            if not songs == {}:
+            if not songs == {} and 'song' in songs:
                 for temp in songs['song']:
                     if temp['album'] == album:
                         found = True
@@ -257,8 +257,6 @@ class Download:
                     songs = self.client.search2(self.simplifyQuery(song['track']['name']))['searchResult2']
                 for temp2 in songs['song']:
                     if temp2['album'] == album:
-                        print(temp2['album'])
-                        print(album)
                         print('adding to playlist')
                         found = True
                         self.add_to_playlist(playlist_id, temp2['id'])
