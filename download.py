@@ -29,7 +29,7 @@ class Download:
 
     
     def simplifyQuery(self, value):
-        characters = ['(', '[', '{', '-', ')', ']', '}']
+        characters = ['(', '[', '{', '-', ')', ']', '}', '!', '.']
         for character in characters:
             value = value.replace(character, '')
         value = value.replace(':', ' ')
@@ -133,15 +133,18 @@ class Download:
 
     def download_track(self, id_):
         query = ['https://open.spotify.com/track/{0}'.format(id_)]
-        song_obj = parse_query(
-            query,
-            'mp3',
-            False,
-            False,
-            'musixmatch',
-            4,
-            None
-        )[0]
+        try:
+            song_obj = parse_query(
+                query,
+                'mp3',
+                False,
+                False,
+                'musixmatch',
+                4,
+                None
+            )[0]
+        except LookupError:
+            return None
         track = song_obj.song_name
         album = song_obj.album_name
         artist = song_obj.contributing_artists[0]
@@ -235,13 +238,16 @@ class Download:
 
     def playlist_loop(self, playlist, playlist_id):
         for song in playlist:
-            print(song['track']['name'])
+            try:
+                print(song['track']['name'])
+            except TypeError:
+                continue 
             album = song['track']['album']['name']
             songs = self.client.search2(self.simplifyQuery(song['track']['name']))['searchResult2']
             found = False
             if not songs == {} and 'song' in songs:
                 for temp in songs['song']:
-                    if temp['album'] == album:
+                    if temp['album'] == album and temp['title'] == song['track']['name']:
                         found = True
                         print('adding to playlist')
                         self.add_to_playlist(playlist_id, temp['id'])
@@ -256,7 +262,7 @@ class Download:
                 while len(songs['song']) == 0:
                     songs = self.client.search2(self.simplifyQuery(song['track']['name']))['searchResult2']
                 for temp2 in songs['song']:
-                    if temp2['album'] == album:
+                    if temp2['album'] == album and temp2['title'] == song['track']['name']:
                         print('adding to playlist')
                         found = True
                         self.add_to_playlist(playlist_id, temp2['id'])
