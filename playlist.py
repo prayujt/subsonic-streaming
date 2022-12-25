@@ -11,6 +11,8 @@ username = ''
 password = ''
 
 config = dotenv_values()
+download_only = False
+playlist_name = ''
 
 if len(sys.argv) == 2 and sys.argv[1] == 'shortcut':
     playlistFile = open('/home/files/.scripts/music/playlist.txt', 'r')
@@ -19,7 +21,10 @@ if len(sys.argv) == 2 and sys.argv[1] == 'shortcut':
     username = lines[0].strip()
     password = lines[1].strip()
     spotify_url = lines[2].strip()
-    playlist_name = lines[3].strip()
+    try:
+        playlist_name = lines[3].strip()
+    except IndexError:
+        download_only = True
 elif len(sys.argv) < 3:
     print("not enough arguments")
     sys.exit()
@@ -41,4 +46,7 @@ access_token = response['access_token']
 
 client = download.Download(client_id, secret, config['SUBSONIC_URL'], config['SUBSONIC_PORT'], username, password, access_token)
 
-client.download_playlist(spotify_url, playlist_name)
+if download_only:
+    client.get_songs_from_playlist(spotify_url)
+else:
+    client.download_playlist(spotify_url, playlist_name)

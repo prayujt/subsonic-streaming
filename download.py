@@ -72,11 +72,13 @@ class Download:
             except Exception as e:
                 print('couldn\'t load file to set tags')
                 return
-            audiofile.tag.title = track
+            try:
+                audiofile.tag.title = track
+            except AttributeError:
+                return
             audiofile.tag.album = album
             audiofile.tag.artist = artist
             audiofile.tag.release_date = release_date
-            audiofile.tag.recording_date = release_date
             audiofile.tag.track_num = track_num
             audiofile.tag.genre = ''
             if cover_art != None:
@@ -115,15 +117,15 @@ class Download:
         artistExists = os.path.isdir('/home/files/Music/{0}'.format(new_artist))
         albumExists = os.path.isdir('/home/files/Music/{0}/{1}'.format(new_artist, new_album))
         trackExists = os.path.isfile('/home/files/Music/{0}/{1}/{2}.mp3'.format(new_artist, new_album, new_track))
+        file_location = '/home/files/Music/{0}/{1}/{2}.mp3'.format(new_artist, new_album, new_track)
         if trackExists:
             print('skipped repeat...')
-            return None
+            return file_location
         if not artistExists:
             os.system('mkdir \"/home/files/Music/{0}\"; mkdir \"/home/files/Music/{0}/{1}\"'.format(new_artist, new_album))
         else:
             if not albumExists:
                 os.system('mkdir \"/home/files/Music/{0}/{1}\"'.format(new_artist, new_album))
-        file_location = '/home/files/Music/{0}/{1}/{2}.mp3'.format(new_artist, new_album, new_track)
         if not new_track == '':
             os.system("/home/files/.local/bin/yt-dlp -f \"ba\" -x --audio-format mp3 {0} -o \"{1}\"".format(video_id, file_location))
         else:
@@ -243,7 +245,7 @@ class Download:
             except TypeError:
                 continue 
             album = song['track']['album']['name']
-            songs = self.client.search2(self.simplifyQuery(song['track']['name']))['searchResult2']
+            songs = self.client.search2(self.simplifyQuery(song['track']['name']), songCount=2000)['searchResult2']
             found = False
             if not songs == {} and 'song' in songs:
                 for temp in songs['song']:
@@ -255,10 +257,13 @@ class Download:
             if not found:
                 href = song['track']['href']
                 path = self.download_track(href[href.find('tracks/')+7:])
+                print(path)
                 if path == None:
                     print('Error')
                     continue
                 songs = self.client.search2(self.simplifyQuery(song['track']['name']))['searchResult2']
+                if 'song' not in songs:
+                    continue
                 while len(songs['song']) == 0:
                     songs = self.client.search2(self.simplifyQuery(song['track']['name']))['searchResult2']
                 for temp2 in songs['song']:
@@ -331,10 +336,49 @@ class Download:
                 audiofile.tag.album = album
                 audiofile.tag.artist = artist
                 audiofile.tag.release_date = release_date
-                audiofile.tag.recording_date = release_date
                 audiofile.tag.track_num = track_num
                 audiofile.tag.genre = ''
                 if image_data != '':
                     audiofile.tag.images.set(ImageFrame.FRONT_COVER, image_data, 'image/jpeg')
 
                 audiofile.tag.save(version=eyed3.id3.ID3_V2_3)
+    
+    def get_songs_from_playlist(self, spotify_url):
+        id_ = spotify_url[spotify_url.find('playlist/')+9:]
+        r = requests.get('https://api.spotify.com/v1/playlists/{0}'.format(id_), headers={
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer {token}'.format(token=self.access_token),
+        })
+        text = json.loads(r.text)
+        playlist = text['tracks']['items']
+        self.playlist_download_loop(playlist)
+        _next = text['tracks']['next']
+        while _next != None:
+            r = requests.get(_next, headers={
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer {token}'.format(token=self.access_token),
+            })
+            text = json.loads(r.text)
+            playlist = text['items']
+            _next = text['next']
+            self.playlist_download_loop(playlist)
+
+    def playlist_download_loop(self, playlist):
+        for song in playlist:
+            try:
+                print(song['track']['name'])
+            except TypeError:
+                continue 
+            album = song['track']['album']['name']
+            songs = self.client.search2(self.simplifyQuery(song['track']['name']))['searchResult2']
+            found = False
+            if not songs == {} and 'song' in songs:
+                for temp in songs['song']:
+                    if temp['album'] == album and temp['title'] == song['track']['name']:
+                        found = True
+                        break
+            if not found:
+                href = song['track']['href']
+                path = self.download_track(href[href.find('tracks/')+7:])
+                print(path)
+
