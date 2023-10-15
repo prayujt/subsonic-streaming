@@ -10,42 +10,41 @@ import requests
 import json
 import unicodedata
 import libsonic
+import yt_dlp
 
-from spotdl.parsers import parse_query
-from spotdl.search import SpotifyClient
+def simplify_query(value):
+    characters = ['(', '[', '{', '-', ')', ']', '}', '!', '.']
+    for character in characters:
+        value = value.replace(character, '')
+    value = value.replace(':', ' ')
+    return value
 
-class Download:
-    def __init__(self, client_id, client_secret, url, port, username, password, access_token=None):
-        self.access_token = access_token
+def strip_accents(text):
+    try:
+        text = unicode(text, 'utf-8')
+    except NameError: # unicode is a default on python 3
+        pass
+
+    text = unicodedata.normalize('NFD', text)\
+            .encode('ascii', 'ignore')\
+            .decode("utf-8")
+    return str(text)
+
+def clean(value):
+    value = strip_accents(value.replace('\'','').replace('\"','').replace('$','S').replace('/','').replace('#','').replace('?','').replace('!','').replace(':', '').replace('>', '').replace('<', '').replace('*', '').replace('|', '').replace('.', ''))
+    return value
+
+def find_yt_url(sp_url):
+    encoded_url = urllib.parse.urlencode({ 'url': sp_url })
+    res = requests.get('https://api.song.link/v1-alpha.1/links?{0}'.format(encoded_url))
+    val = json.loads(res.text)
+    return val['linksByPlatform']['youtubeMusic']['url']
+
+class Downloader:
+    def __init__(self, url, port, username, password, music_home, sp_client):
         self.client = libsonic.Connection(url, username, password, port)
-        try:
-            SpotifyClient.init(
-                client_id=client_id,
-                client_secret=client_secret,
-                user_auth=False,
-            )
-        except Exception:
-            pass
-
-    
-    def simplifyQuery(self, value):
-        characters = ['(', '[', '{', '-', ')', ']', '}', '!', '.']
-        for character in characters:
-            value = value.replace(character, '')
-        value = value.replace(':', ' ')
-        return value
-
-    def strip_accents(self, text):
-        try:
-            text = unicode(text, 'utf-8')
-        except NameError: # unicode is a default on python 3 
-            pass
-
-        text = unicodedata.normalize('NFD', text)\
-               .encode('ascii', 'ignore')\
-               .decode("utf-8")
-
-        return str(text)
+        self.music_home = music_home
+        self.sp_client = sp_client
 
     def add_to_playlist(self, playlist_id, song_id):
         playlist = self.client.getPlaylist(playlist_id)['playlist']
@@ -91,16 +90,12 @@ class Download:
 
             return file_location
 
-    def clean(self, value):
-        value = self.strip_accents(value.replace('\'','').replace('\"','').replace('$','S').replace('/','').replace('#','').replace('?','').replace('!','').replace(':', '').replace('>', '').replace('<', '').replace('*', '').replace('|', '').replace('.', ''))
-        return value
-
     def search(self, track, album, artists):
         artist = artists[0]
-        new_track = self.clean(track)
-        new_album = self.clean(album)
-        new_artist = self.clean(artist)
-        query = self.clean(new_track + ' ' + new_artist + ' audio').replace('  ', '+').replace(' ' , '+').replace('&', '%26')
+        new_track = clean(track)
+        new_album = clean(album)
+        new_artist = clean(artist)
+        query = clean(new_track + ' ' + new_artist + ' audio').replace('  ', '+').replace(' ' , '+').replace('&', '%26')
         try:
             html = urllib.request.urlopen("https://www.youtube.com/results?search_query=" + query)
         except UnicodeEncodeError as e:
@@ -110,65 +105,65 @@ class Download:
         video_id = video_ids[0]
         return video_id
 
-    def get_video(self, track, album, artist, video_id):
-        new_artist = self.clean(artist)
-        new_album = self.clean(album)
-        new_track = self.clean(track)
-        artistExists = os.path.isdir('/home/files/Music/{0}'.format(new_artist))
-        albumExists = os.path.isdir('/home/files/Music/{0}/{1}'.format(new_artist, new_album))
-        trackExists = os.path.isfile('/home/files/Music/{0}/{1}/{2}.mp3'.format(new_artist, new_album, new_track))
-        file_location = '/home/files/Music/{0}/{1}/{2}.mp3'.format(new_artist, new_album, new_track)
+    def get_video(self, track, album, artist, video_link):
+        new_track = clean(track)
+        new_album = clean(album)
+        new_artist = clean(artist)
+        artistExists = os.path.isdir('{0}/{1}'.format(self.music_home, new_artist))
+        albumExists = os.path.isdir('{0}/{1}/{2}'.format(self.music_home, new_artist, new_album))
+        trackExists = os.path.isfile('{0}/{1}/{2}/{3}.mp3'.format(self.music_home, new_artist, new_album, new_track))
+        file_location = '{0}/{1}/{2}/{3}.mp3'.format(self.music_home, new_artist, new_album, new_track)
         if trackExists:
             print('skipped repeat...')
             return file_location
         if not artistExists:
-            os.system('mkdir \"/home/files/Music/{0}\"; mkdir \"/home/files/Music/{0}/{1}\"'.format(new_artist, new_album))
+            os.mkdir('{0}/{1}'.format(self.music_home, new_artist, new_album))
+            os.mkdir('{0}/{1}/{2}'.format(self.music_home, new_artist, new_album))
         else:
             if not albumExists:
-                os.system('mkdir \"/home/files/Music/{0}/{1}\"'.format(new_artist, new_album))
+                os.mkdir('{0}/{1}/{2}'.format(self.music_home, new_artist, new_album))
+
+        error_code = -1
         if not new_track == '':
-            os.system("/home/files/.local/bin/yt-dlp -f \"ba\" -x --audio-format mp3 {0} -o \"{1}\"".format(video_id, file_location))
+            ydl_opts = {
+                'format': 'mp3/bestaudio/best',
+                'outtmpl': '{0}/{1}/{2}/{3}'.format(self.music_home, new_artist, new_album, new_track),
+                'postprocessors': [{  # Extract audio using ffmpeg
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                }]
+            }
+
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                error_code = ydl.download(video_link)
+
+        if error_code == 0:
+            return file_location
         else:
             print('invalid characters')
             return None
-        return file_location
 
     def download_track(self, id_):
-        query = ['https://open.spotify.com/track/{0}'.format(id_)]
-        try:
-            song_obj = parse_query(
-                query,
-                'mp3',
-                False,
-                False,
-                'musixmatch',
-                4,
-                None
-            )[0]
-        except LookupError:
-            return None
-        track = song_obj.song_name
-        album = song_obj.album_name
-        artist = song_obj.contributing_artists[0]
-        release_date = song_obj.album_release
-        track_num = song_obj.track_number # disc_number
-        cover_art = song_obj.album_cover_url
-        path = self.get_video(track, album, artist, song_obj.youtube_link)
+        sp_url = 'https://open.spotify.com/track/{0}'.format(id_)
+        yt_url = find_yt_url(sp_url)
+
+        metadata = self.sp_client.api_req('/tracks/{0}'.format(id_))
+
+        track = metadata['name']
+        album = metadata['album']['name']
+        artist = metadata['album']['artists'][0]['name']
+        release_date = metadata['album']['release_date']
+        track_num = metadata['track_number']
+        cover_art = metadata['album']['images'][0]['url']
+
+        path = self.get_video(track, album, artist, yt_url)
         if path != None:
             self.tag_file(path, track, album, artist, release_date, track_num, cover_art)
-        return path
+        return 'hi'
 
     def download_album(self, id_):
-        query = ['https://open.spotify.com/album/{0}'.format(id_)]
-        _song_obj = parse_query(
-            query,
-            'mp3',
-            False,
-            False,
-            'musixmatch',
-            4,
-            None
-        )
+        sp_urls = 'https://open.spotify.com/album/{0}'.format(id_)
+
         for song_obj in _song_obj:
             track = song_obj.song_name
             album = song_obj.album_name
@@ -182,15 +177,8 @@ class Download:
 
     def download_artist(self, id_):
         query = ['https://open.spotify.com/artist/{0}'.format(id_)]
-        _song_obj = parse_query(
-            query,
-            'mp3',
-            False,
-            False,
-            'musixmatch',
-            4,
-            None
-        )
+        _song_obj = sp.spotify_query(query)
+
         for song_obj in _song_obj:
             try:
                 track = song_obj.song_name
@@ -209,15 +197,7 @@ class Download:
         id_ = spotify_url[spotify_url.find('track/')+6:]
 
         query = [spotify_url]
-        song_obj = parse_query(
-            query,
-            'mp3',
-            False,
-            False,
-            'musixmatch',
-            4,
-            None
-        )
+        song_obj = sp.spotify_query(query)
 
         track = song_obj.song_name
         album = song_obj.album_name
@@ -226,9 +206,9 @@ class Download:
         track_num = song_obj.track_number # disc_number
         cover_art = song_obj.album_cover_url
 
-        new_track = self.clean(track)
-        new_album = self.clean(album)
-        new_artist = self.clean(artist)
+        new_track = clean(track)
+        new_album = clean(album)
+        new_artist = clean(artist)
 
         filePath = '/home/files/Music/{0}/{1}/{2}.mp3'.format(new_artist, new_album, new_track)
         trackExists = os.path.isfile(filePath)
@@ -245,7 +225,7 @@ class Download:
             except TypeError:
                 continue 
             album = song['track']['album']['name']
-            songs = self.client.search2(self.simplifyQuery(song['track']['name']), songCount=2000)['searchResult2']
+            songs = self.client.search2(simplify_query(song['track']['name']), songCount=2000)['searchResult2']
             found = False
             if not songs == {} and 'song' in songs:
                 for temp in songs['song']:
@@ -261,11 +241,11 @@ class Download:
                 if path == None:
                     print('Error')
                     continue
-                songs = self.client.search2(self.simplifyQuery(song['track']['name']))['searchResult2']
+                songs = self.client.search2(simplify_query(song['track']['name']))['searchResult2']
                 if 'song' not in songs:
                     continue
                 while len(songs['song']) == 0:
-                    songs = self.client.search2(self.simplifyQuery(song['track']['name']))['searchResult2']
+                    songs = self.client.search2(simplify_query(song['track']['name']))['searchResult2']
                 for temp2 in songs['song']:
                     if temp2['album'] == album and temp2['title'] == song['track']['name']:
                         print('adding to playlist')
@@ -294,11 +274,11 @@ class Download:
             self.playlist_loop(playlist, playlist_id)
 
     def search_song(self, query):
-        songs = self.client.search2(self.simplifyQuery(query))['searchResult2']
+        songs = self.client.search2(simplify_query(query))['searchResult2']
         return songs
 
     def replace_song(self, track, album, artist, id_):
-        file_path = '/home/files/Music/{0}/{1}/{2}.mp3'.format(self.clean(artist), self.clean(album), self.clean(track))
+        file_path = '/home/files/Music/{0}/{1}/{2}.mp3'.format(clean(artist), clean(album), clean(track))
         trackExists = os.path.isfile(file_path)
         print(file_path)
         if trackExists:
@@ -370,7 +350,7 @@ class Download:
             except TypeError:
                 continue 
             album = song['track']['album']['name']
-            songs = self.client.search2(self.simplifyQuery(song['track']['name']))['searchResult2']
+            songs = self.client.search2(simplify_query(song['track']['name']))['searchResult2']
             found = False
             if not songs == {} and 'song' in songs:
                 for temp in songs['song']:

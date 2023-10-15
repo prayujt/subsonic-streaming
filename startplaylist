@@ -1,3 +1,0 @@
-#!/bin/bash
-
-python3 /home/files/.scripts/music/playlist.py shortcut &
