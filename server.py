@@ -2,9 +2,11 @@
 from flask import Flask, request
 from dotenv import dotenv_values
 import urllib
+import threading
 
 import spotify_api as sp
 import download
+import threading
 
 app = Flask(__name__)
 
@@ -89,12 +91,14 @@ def download_songs():
     client = download.Downloader(subsonic_url, subsonic_port, subsonic_username, subsonic_password, music_home, sp_client)
     for i in range(len(indices)):
         choice = choices[i]
-
+        thread = None
         if choice[int(indices[i]) - 1][0] == 'track':
-            client.download_track(choice[int(indices[i]) - 1][1])
+            thread = threading.Thread(target=client.download_track, args=(choice[int(indices[i]) - 1][1],), daemon=True)
         elif choice[int(indices[i]) - 1][0] == 'album':
-            client.download_album(choice[int(indices[i]) - 1][1])
+            thread = threading.Thread(target=client.download_album, args=(choice[int(indices[i]) - 1][1],), daemon=True)
         elif choice[int(indices[i]) - 1][0] == 'artist':
-            client.download_artist(choice[int(indices[i]) - 1][1])
-
+            thread = threading.Thread(target=client.download_artist, args=(choice[int(indices[i]) - 1][1],), daemon=True)
+        else:
+            return 'invalid choice'
+        thread.start()
     return 'done'

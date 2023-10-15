@@ -3,14 +3,18 @@ import urllib.request
 import re
 import sys
 import os
-import eyed3
-from eyed3.id3.frames import ImageFrame
 import time
 import requests
 import json
 import unicodedata
+
+import eyed3
+from eyed3.id3.frames import ImageFrame
 import libsonic
+from ytmusicapi import YTMusic
 import yt_dlp
+
+yt_music = YTMusic()
 
 def simplify_query(value):
     characters = ['(', '[', '{', '-', ')', ']', '}', '!', '.']
@@ -34,11 +38,14 @@ def clean(value):
     value = strip_accents(value.replace('\'','').replace('\"','').replace('$','S').replace('/','').replace('#','').replace('?','').replace('!','').replace(':', '').replace('>', '').replace('<', '').replace('*', '').replace('|', '').replace('.', ''))
     return value
 
-def find_yt_url(sp_url):
-    encoded_url = urllib.parse.urlencode({ 'url': sp_url })
-    res = requests.get('https://api.song.link/v1-alpha.1/links?{0}'.format(encoded_url))
-    val = json.loads(res.text)
-    return val['linksByPlatform']['youtubeMusic']['url']
+def find_yt_music_url(track_name, album_name):
+    res = yt_music.search(track_name + ' ' + album_name, filter='songs')
+    return 'https://music.youtube.com/watch?v={0}'.format(res[0]['videoId'])
+    # encoded_url = urllib.parse.urlencode({ 'url': sp_url })
+    # res = requests.get('https://api.song.link/v1-alpha.1/links?{0}'.format(encoded_url))
+    # val = json.loads(res.text)
+    # return val['linksByPlatform']['youtubeMusic']['url']
+
 
 class Downloader:
     def __init__(self, url, port, username, password, music_home, sp_client):
@@ -144,9 +151,7 @@ class Downloader:
             return None
 
     def download_track(self, id_):
-        sp_url = 'https://open.spotify.com/track/{0}'.format(id_)
-        yt_url = find_yt_url(sp_url)
-
+        print(id_)
         metadata = self.sp_client.api_req('/tracks/{0}'.format(id_))
 
         track = metadata['name']
@@ -156,42 +161,54 @@ class Downloader:
         track_num = metadata['track_number']
         cover_art = metadata['album']['images'][0]['url']
 
+        yt_url = find_yt_music_url(track, album)
+
         path = self.get_video(track, album, artist, yt_url)
         if path != None:
             self.tag_file(path, track, album, artist, release_date, track_num, cover_art)
-        return 'hi'
+
+        return path
 
     def download_album(self, id_):
-        sp_urls = 'https://open.spotify.com/album/{0}'.format(id_)
+        next_ = ''
+        offset = 0
 
-        for song_obj in _song_obj:
-            track = song_obj.song_name
-            album = song_obj.album_name
-            artist = song_obj.contributing_artists[0]
-            release_date = song_obj.album_release
-            track_num = song_obj.track_number # disc_number
-            cover_art = song_obj.album_cover_url
-            path = self.get_video(track, album, artist, song_obj.youtube_link)
-            if path != None:
-                self.tag_file(path, track, album, artist, release_date, track_num, cover_art)
+        while next_ != None:
+            tracks = self.sp_client.api_req('/albums/{0}/tracks?limit=50&offset={1}'.format(id_, offset))
+            offset += 50
+            next_ = tracks['next']
+            track_ids = [track['id'] for track in tracks['items']]
+
+            for track_id in track_ids:
+                self.download_track(track_id)
+                # metadata = self.sp_client.api_req('/tracks/{0}'.format(track_id))
+
+                # track = metadata['name']
+                # album = metadata['album']['name']
+                # artist = metadata['album']['artists'][0]['name']
+                # release_date = metadata['album']['release_date']
+                # track_num = metadata['track_number']
+                # cover_art = metadata['album']['images'][0]['url']
+
+                # yt_url = find_yt_music_url(track, album)
+
+                # path = self.get_video(track, album, artist, yt_url)
+                # if path != None:
+                #     self.tag_file(path, track, album, artist, release_date, track_num, cover_art)
+
 
     def download_artist(self, id_):
-        query = ['https://open.spotify.com/artist/{0}'.format(id_)]
-        _song_obj = sp.spotify_query(query)
+        next_ = ''
+        offset = 0
 
-        for song_obj in _song_obj:
-            try:
-                track = song_obj.song_name
-            except AttributeError:
-                continue
-            album = song_obj.album_name
-            artist = song_obj.contributing_artists[0]
-            release_date = song_obj.album_release
-            track_num = song_obj.track_number # disc_number
-            cover_art = song_obj.album_cover_url
-            path = self.get_video(track, album, artist, song_obj.youtube_link)
-            if path != None:
-                self.tag_file(path, track, album, artist, release_date, track_num, cover_art)
+        while next_ != None:
+            albums = self.sp_client.api_req('/artists/{0}/albums?limit=50&offset={1}'.format(id_, offset))
+            offset += 50
+            next_ = albums['next']
+            album_ids = [album['id'] for album in albums['items']]
+
+            for album_id in album_ids:
+                self.download_album(album_id)
 
     def download_track_manual(self, spotify_url, youtube_url):
         id_ = spotify_url[spotify_url.find('track/')+6:]
