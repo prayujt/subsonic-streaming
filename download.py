@@ -151,7 +151,6 @@ class Downloader:
             return None
 
     def download_track(self, id_):
-        print(id_)
         metadata = self.sp_client.api_req('/tracks/{0}'.format(id_))
 
         track = metadata['name']
@@ -222,10 +221,10 @@ class Downloader:
     def playlist_loop(self, playlist, playlist_id):
         for song in playlist:
             print('---------------------')
-            try:
-                print(song['track']['name'])
-            except TypeError:
-                continue 
+            if 'track' not in song or 'name' not in song['track'] or song['track']['name'] == '':
+                print('Song information missing')
+                continue
+            print(song['track']['name'])
             album = song['track']['album']['name']
             songs = self.client.search2(simplify_query(song['track']['name']), songCount=2000)['searchResult2']
             found = False
@@ -239,7 +238,6 @@ class Downloader:
             if not found:
                 href = song['track']['href']
                 path = self.download_track(href[href.find('tracks/')+7:])
-                print(path)
                 if path == None:
                     print('Error')
                     continue
