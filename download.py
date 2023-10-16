@@ -166,7 +166,6 @@ class Downloader:
         path = self.get_video(track, album, artist, yt_url)
         if path != None:
             self.tag_file(path, track, album, artist, release_date, track_num, cover_art)
-
         return path
 
     def download_album(self, id_):
@@ -181,21 +180,6 @@ class Downloader:
 
             for track_id in track_ids:
                 self.download_track(track_id)
-                # metadata = self.sp_client.api_req('/tracks/{0}'.format(track_id))
-
-                # track = metadata['name']
-                # album = metadata['album']['name']
-                # artist = metadata['album']['artists'][0]['name']
-                # release_date = metadata['album']['release_date']
-                # track_num = metadata['track_number']
-                # cover_art = metadata['album']['images'][0]['url']
-
-                # yt_url = find_yt_music_url(track, album)
-
-                # path = self.get_video(track, album, artist, yt_url)
-                # if path != None:
-                #     self.tag_file(path, track, album, artist, release_date, track_num, cover_art)
-
 
     def download_artist(self, id_):
         next_ = ''
@@ -237,6 +221,7 @@ class Downloader:
 
     def playlist_loop(self, playlist, playlist_id):
         for song in playlist:
+            print('---------------------')
             try:
                 print(song['track']['name'])
             except TypeError:
@@ -272,23 +257,19 @@ class Downloader:
     def download_playlist(self, spotify_url, playlist_name):
         playlist_id = self.client.createPlaylist(name=playlist_name, songIds=[])['playlist']['id']
         id_ = spotify_url[spotify_url.find('playlist/')+9:]
-        r = requests.get('https://api.spotify.com/v1/playlists/{0}'.format(id_), headers={
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer {token}'.format(token=self.access_token),
-        })
-        text = json.loads(r.text)
-        playlist = text['tracks']['items']
-        self.playlist_loop(playlist, playlist_id)
-        _next = text['tracks']['next']
+
+        offset = 0
+        playlist = self.sp_client.api_req('/playlists/{0}/tracks?limit=50&offset={1}'.format(id_, offset))
+        tracks = playlist['items']
+        self.playlist_loop(tracks, playlist_id)
+
+        _next = playlist['next']
         while _next != None:
-            r = requests.get(_next, headers={
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer {token}'.format(token=self.access_token),
-            })
-            text = json.loads(r.text)
-            playlist = text['items']
-            _next = text['next']
-            self.playlist_loop(playlist, playlist_id)
+            playlist = self.sp_client.api_req('/playlists/{0}/tracks?limit=50&offset={1}'.format(id_, offset))
+            offset += 50
+            _next = playlist['next']
+            tracks = playlist['items']
+            self.playlist_loop(tracks, playlist_id)
 
     def search_song(self, query):
         songs = self.client.search2(simplify_query(query))['searchResult2']

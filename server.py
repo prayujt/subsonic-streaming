@@ -6,7 +6,6 @@ import threading
 
 import spotify_api as sp
 import download
-import threading
 
 app = Flask(__name__)
 
@@ -23,6 +22,7 @@ subsonic_password = config['SUBSONIC_PASSWORD']
 music_home = config['MUSIC_HOME']
 
 sp_client = sp.SpotifyClient(client_id, secret)
+download_client = download.Downloader(subsonic_url, subsonic_port, subsonic_username, subsonic_password, music_home, sp_client)
 
 @app.route('/select/music', methods=['POST'])
 def select_songs():
@@ -88,17 +88,27 @@ def select_songs():
 def download_songs():
     indices = request.json['indices'].split('\n')[1:]
 
-    client = download.Downloader(subsonic_url, subsonic_port, subsonic_username, subsonic_password, music_home, sp_client)
     for i in range(len(indices)):
         choice = choices[i]
         thread = None
         if choice[int(indices[i]) - 1][0] == 'track':
-            thread = threading.Thread(target=client.download_track, args=(choice[int(indices[i]) - 1][1],), daemon=True)
+            thread = threading.Thread(target=download_client.download_track, args=(choice[int(indices[i]) - 1][1],), daemon=True)
         elif choice[int(indices[i]) - 1][0] == 'album':
-            thread = threading.Thread(target=client.download_album, args=(choice[int(indices[i]) - 1][1],), daemon=True)
+            thread = threading.Thread(target=download_client.download_album, args=(choice[int(indices[i]) - 1][1],), daemon=True)
         elif choice[int(indices[i]) - 1][0] == 'artist':
-            thread = threading.Thread(target=client.download_artist, args=(choice[int(indices[i]) - 1][1],), daemon=True)
+            thread = threading.Thread(target=download_client.download_artist, args=(choice[int(indices[i]) - 1][1],), daemon=True)
         else:
             return 'invalid choice'
         thread.start()
-    return 'done'
+    return 'running threads'
+
+@app.route('/playlist', methods=['POST'])
+def sync_playlist():
+    username = request.json['username']
+    password = request.json['password']
+    sp_playlist = request.json['spotify_url']
+    playlist_name = request.json['playlist_name']
+
+    thread = threading.Thread(target=download_client.download_playlist, args=(sp_playlist, playlist_name,), daemon=True)
+    thread.start()
+    return 'thread {0} running'.format(thread.native_id)
