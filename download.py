@@ -257,15 +257,11 @@ class Downloader:
         id_ = spotify_url[spotify_url.find('playlist/')+9:]
 
         offset = 0
-        playlist = self.sp_client.api_req('/playlists/{0}/tracks?limit=50&offset={1}'.format(id_, offset))
-        tracks = playlist['items']
-        self.playlist_loop(tracks, playlist_id)
-
-        _next = playlist['next']
+        next_ = ''
         while _next != None:
-            playlist = self.sp_client.api_req('/playlists/{0}/tracks?limit=50&offset={1}'.format(id_, offset))
             offset += 50
-            _next = playlist['next']
+            playlist = self.sp_client.api_req('/playlists/{0}/tracks?limit=50&offset={1}'.format(id_, offset))
+            next_ = playlist['next']
             tracks = playlist['items']
             self.playlist_loop(tracks, playlist_id)
 
