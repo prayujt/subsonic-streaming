@@ -258,7 +258,7 @@ class Downloader:
 
         offset = 0
         next_ = ''
-        while _next != None:
+        while next_ != None:
             offset += 50
             playlist = self.sp_client.api_req('/playlists/{0}/tracks?limit=50&offset={1}'.format(id_, offset))
             next_ = playlist['next']
