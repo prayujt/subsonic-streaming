@@ -41,10 +41,6 @@ def clean(value):
 def find_yt_music_url(track_name, album_name):
     res = yt_music.search(track_name + ' ' + album_name, filter='songs')
     return 'https://music.youtube.com/watch?v={0}'.format(res[0]['videoId'])
-    # encoded_url = urllib.parse.urlencode({ 'url': sp_url })
-    # res = requests.get('https://api.song.link/v1-alpha.1/links?{0}'.format(encoded_url))
-    # val = json.loads(res.text)
-    # return val['linksByPlatform']['youtubeMusic']['url']
 
 
 class Downloader:
