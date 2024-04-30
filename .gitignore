@@ -4,3 +4,4 @@
 node_modules
 .spotdl-cache
 __pycache__
+venv

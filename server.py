@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from flask import Flask, request
 from dotenv import dotenv_values
+import uvicorn
 import urllib
 import threading
 
@@ -112,3 +113,6 @@ def sync_playlist():
     thread = threading.Thread(target=download_client.download_playlist, args=(sp_playlist, playlist_name,), daemon=True)
     thread.start()
     return 'thread {0} running'.format(thread.native_id)
+
+if __name__ == "__main__":
+    uvicorn.run("server:app", port=5000, log_level="info")
