@@ -115,4 +115,4 @@ def sync_playlist():
     return 'thread {0} running'.format(thread.native_id)
 
 if __name__ == "__main__":
-    uvicorn.run("server:app", port=5000, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=5000, log_level="info")
