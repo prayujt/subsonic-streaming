@@ -60,11 +60,11 @@ class Downloader:
 
     def wait_for_sync(self):
         self.client.startScan()
-        print('scanning')
+        print('scanning', flush=True)
         status = self.client.getScanStatus()
         while (status['scanStatus']['scanning'] == True):
             status = self.client.getScanStatus()
-        print('finished scanning')
+        print('finished scanning', flush=True)
         return
 
     def tag_file(self, file_location, track, album, artist, release_date, track_num, cover_art=None, img_data=None):

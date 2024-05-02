@@ -31,6 +31,7 @@ download_client = download.Downloader(subsonic_url, subsonic_port, subsonic_user
 
 @app.route('/select/music', methods=['POST'])
 def select_songs():
+    choices = [[]]
     titles = request.json['titles']
     titles = titles.split('\n')
     value = ''
