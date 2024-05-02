@@ -1,0 +1,9 @@
+asgiref==3.8.1
+eyed3==0.9.7
+Flask==3.0.3
+py-sonic==1.0.1
+python-dotenv==1.0.1
+urllib3==2.2.1
+uvicorn==0.29.0
+yt-dlp==2024.4.9
+ytmusicapi==1.6.0

@@ -40,7 +40,7 @@ def clean(value):
 
 def find_yt_music_url(track_name, album_name):
     res = yt_music.search(track_name + ' ' + album_name, filter='songs')
-    return 'https://music.youtube.com/watch?v={0}'.format(res[0]['videoId'])
+    return f'https://music.youtube.com/watch?v={res[0]["videoId"]}'
 
 
 class Downloader:
@@ -112,25 +112,26 @@ class Downloader:
         new_track = clean(track)
         new_album = clean(album)
         new_artist = clean(artist)
-        artistExists = os.path.isdir('{0}/{1}'.format(self.music_home, new_artist))
-        albumExists = os.path.isdir('{0}/{1}/{2}'.format(self.music_home, new_artist, new_album))
-        trackExists = os.path.isfile('{0}/{1}/{2}/{3}.mp3'.format(self.music_home, new_artist, new_album, new_track))
-        file_location = '{0}/{1}/{2}/{3}.mp3'.format(self.music_home, new_artist, new_album, new_track)
+        file_location = f'{self.music_home}/{new_artist}/{new_album}/{new_track}.mp3'
+        print(f'Checking {file_location}...')
+        artistExists = os.path.isdir(f'{self.music_home}/{new_artist}')
+        albumExists = os.path.isdir(f'{self.music_home}/{new_artist}/{new_album}')
+        trackExists = os.path.isfile(file_location)
         if trackExists:
             print('skipped repeat...')
             return file_location
         if not artistExists:
-            os.mkdir('{0}/{1}'.format(self.music_home, new_artist, new_album))
-            os.mkdir('{0}/{1}/{2}'.format(self.music_home, new_artist, new_album))
+            os.mkdir(f'{self.music_home}/{new_artist}')
+            os.mkdir(f'{self.music_home}/{new_artist}/{new_album}')
         else:
             if not albumExists:
-                os.mkdir('{0}/{1}/{2}'.format(self.music_home, new_artist, new_album))
+                os.mkdir(f'{self.music_home}/{new_artist}/{new_album}')
 
         error_code = -1
         if not new_track == '':
             ydl_opts = {
                 'format': 'mp3/bestaudio/best',
-                'outtmpl': '{0}/{1}/{2}/{3}'.format(self.music_home, new_artist, new_album, new_track),
+                'outtmpl': f'{self.music_home}/{new_artist}/{new_album}/{new_track}',
                 'postprocessors': [{  # Extract audio using ffmpeg
                     'key': 'FFmpegExtractAudio',
                     'preferredcodec': 'mp3',
@@ -147,7 +148,7 @@ class Downloader:
             return None
 
     def download_track(self, id_):
-        metadata = self.sp_client.api_req('/tracks/{0}'.format(id_))
+        metadata = self.sp_client.api_req(f'/tracks/{id_}')
 
         track = metadata['name']
         album = metadata['album']['name']
@@ -168,7 +169,7 @@ class Downloader:
         offset = 0
 
         while next_ != None:
-            tracks = self.sp_client.api_req('/albums/{0}/tracks?limit=50&offset={1}'.format(id_, offset))
+            tracks = self.sp_client.api_req(f'/albums/{id_}/tracks?limit=50&offset={offset}')
             offset += 50
             next_ = tracks['next']
             track_ids = [track['id'] for track in tracks['items']]
@@ -181,7 +182,7 @@ class Downloader:
         offset = 0
 
         while next_ != None:
-            albums = self.sp_client.api_req('/artists/{0}/albums?limit=50&offset={1}'.format(id_, offset))
+            albums = self.sp_client.api_req(f'/artists/{id_}/albums?limit=50&offset={offset}')
             offset += 50
             next_ = albums['next']
             album_ids = [album['id'] for album in albums['items']]
@@ -206,10 +207,10 @@ class Downloader:
         new_album = clean(album)
         new_artist = clean(artist)
 
-        filePath = '/home/files/Music/{0}/{1}/{2}.mp3'.format(new_artist, new_album, new_track)
+        filePath = f'{self.music_home}/{new_artist}/{new_album}/{new_track}.mp3'
         trackExists = os.path.isfile(filePath)
         if trackExists:
-            os.system('rm \"{0}\"'.format(filePath))
+            os.system(f'rm \"{file_path}\"')
 
         path = self.get_video(track, album, artist, youtube_url[youtube_url.find('v=')+2:])
         self.tag_file(path, track, album, artist, release_date, track_num, cover_art)
@@ -255,7 +256,7 @@ class Downloader:
         offset = 0
         next_ = ''
         while next_ != None:
-            playlist = self.sp_client.api_req('/playlists/{0}/tracks?limit=50&offset={1}'.format(id_, offset))
+            playlist = self.sp_client.api_req(f'/playlists/{id_}/tracks?limit=50&offset={offset}')
             offset += 50
             next_ = playlist['next']
             tracks = playlist['items']
@@ -266,7 +267,7 @@ class Downloader:
         return songs
 
     def replace_song(self, track, album, artist, id_):
-        file_path = '/home/files/Music/{0}/{1}/{2}.mp3'.format(clean(artist), clean(album), clean(track))
+        filePath = f'{self.music_home}/{clean(artist)}/{clean(album)}/{clean(track)}.mp3'
         trackExists = os.path.isfile(file_path)
         print(file_path)
         if trackExists:
@@ -289,7 +290,7 @@ class Downloader:
             except IndexError:
                 print('could not load any cover art')
 
-            os.system('rm \"{0}\"'.format(file_path))
+            os.system(f'rm \"{file_path}\"')
 
             path = self.get_video(track, album, artist, id_)
             if image_data != '':
@@ -313,9 +314,9 @@ class Downloader:
     
     def get_songs_from_playlist(self, spotify_url):
         id_ = spotify_url[spotify_url.find('playlist/')+9:]
-        r = requests.get('https://api.spotify.com/v1/playlists/{0}'.format(id_), headers={
+        r = requests.get(f'https://api.spotify.com/v1/playlists/{id_}', headers={
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer {token}'.format(token=self.access_token),
+            'Authorization': 'Bearer {self.access_token}',
         })
         text = json.loads(r.text)
         playlist = text['tracks']['items']
@@ -324,7 +325,7 @@ class Downloader:
         while _next != None:
             r = requests.get(_next, headers={
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer {token}'.format(token=self.access_token),
+                'Authorization': 'Bearer {self.access_token}',
             })
             text = json.loads(r.text)
             playlist = text['items']

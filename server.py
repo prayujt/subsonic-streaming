@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 from flask import Flask, request
-from dotenv import dotenv_values
+from dotenv import load_dotenv
+from asgiref.wsgi import WsgiToAsgi
 import uvicorn
 import urllib
 import threading
+import os
 
 import spotify_api as sp
 import download
 
 app = Flask(__name__)
+app_asgi = WsgiToAsgi(app)
 
 choices = [[]]
 
-config = dotenv_values()
+load_dotenv()
+config = os.environ
 
 client_id = config['CLIENT_ID']
 secret = config['CLIENT_SECRET']
@@ -115,4 +119,4 @@ def sync_playlist():
     return 'thread {0} running'.format(thread.native_id)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=5000, log_level="info")
+    uvicorn.run(app_asgi, host="0.0.0.0", port=5000, log_level="info")
